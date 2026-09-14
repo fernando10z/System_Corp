@@ -1,0 +1,737 @@
+/* ============================================================================
+   MIP · sistema visual
+   ----------------------------------------------------------------------------
+   Dirección: acero pintado e instrumentos de sala de control.
+
+   El ámbar NO es el color de marca: es el color de "esto espera una decisión
+   tuya". En un taller, ámbar significa atención requerida, y la pantalla del
+   coordinador es literalmente una cola de triaje. Usarlo para adornar vaciaría
+   de significado el único sitio donde importa.
+
+   El azul de bisel es el color estructural: enlaces, selección, foco.
+
+   Estructura de tokens, igual que en el proyecto hermano:
+     1. tokens crudos (acero, grafito, senal…)  — el vocabulario de la marca
+     2. capa de alias (--primary, --bg-1, --ink) — lo que consumen los módulos
+   Así, retematizar es reescribir el bloque 1 y nada más.
+   ========================================================================== */
+
+/* ── 1 · tokens · claro ─────────────────────────────────────────────────── */
+:root,
+:root[data-theme="light"] {
+  --acero-0: #f2f4f5;   /* fondo de página: acero pintado */
+  --acero-1: #ffffff;   /* superficie elevada */
+  --acero-2: #e9edef;   /* superficie hundida, cabeceras de tabla */
+
+  --bisel-1: #dde3e7;   /* borde por defecto */
+  --bisel-2: #eef1f3;   /* borde tenue, separadores internos */
+  --bisel-3: #c3ccd3;   /* borde marcado, foco de campo */
+
+  --grafito-1: #12171b;  /* texto principal */
+  --grafito-2: #333e46;  /* texto secundario */
+  --grafito-3: #64727c;  /* texto terciario, etiquetas */
+  --grafito-4: #94a2ac;  /* texto deshabilitado, marcas de agua */
+
+  --senal:      #b8620f;  /* ámbar de señal · SÓLO "requiere tu decisión" */
+  --senal-alto: #96500b;
+  --senal-piel: #fdf3e7;
+  --senal-linea:#f0d7b4;
+
+  --indigo:      #2b4c7e;  /* azul de bisel · estructura, enlaces, selección */
+  --indigo-alto: #1f3a63;
+  --indigo-piel: #eaeff7;
+  --indigo-linea:#c3d2e6;
+
+  --rojo:      #b3372c;  /* emergencia, cancelada, rechazo */
+  --rojo-piel: #fdeceb;
+  --rojo-linea:#f3c8c4;
+
+  --verde:      #2c7355;  /* cerrada, aprobado, conforme */
+  --verde-piel: #e9f4ee;
+  --verde-linea:#c0ddcd;
+
+  --violeta:      #5b4a9e;  /* derivadas, jerarquía */
+  --violeta-piel: #efedf8;
+  --violeta-linea:#cfc9ea;
+
+  --sombra-1: 0 1px 2px rgba(18, 23, 27, 0.06);
+  --sombra-2: 0 2px 8px rgba(18, 23, 27, 0.08);
+  --sombra-3: 0 8px 28px rgba(18, 23, 27, 0.12);
+  --sombra-pop: 0 12px 40px rgba(18, 23, 27, 0.18);
+
+  --radio-xs: 3px;
+  --radio-sm: 5px;
+  --radio:    7px;
+  --radio-lg: 11px;
+
+  --fuente-titulo: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --fuente:        "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --fuente-mono:   "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  color-scheme: light;
+}
+
+/* ── tokens · oscuro · sala de control de noche ──────────────────────────── */
+:root[data-theme="dark"] {
+  --acero-0: #0d1013;
+  --acero-1: #161b20;
+  --acero-2: #1e252b;
+
+  --bisel-1: #2a323a;
+  --bisel-2: #202830;
+  --bisel-3: #3d4852;
+
+  --grafito-1: #eef2f5;
+  --grafito-2: #c2ccd4;
+  --grafito-3: #8a99a4;
+  --grafito-4: #5f6d78;
+
+  --senal:      #e39445;
+  --senal-alto: #f0a960;
+  --senal-piel: #2e2013;
+  --senal-linea:#4d3721;
+
+  --indigo:      #6f9bdc;
+  --indigo-alto: #8db3ea;
+  --indigo-piel: #17222f;
+  --indigo-linea:#2b3d54;
+
+  --rojo:      #e0736a;
+  --rojo-piel: #2c1817;
+  --rojo-linea:#4a2825;
+
+  --verde:      #5cb98d;
+  --verde-piel: #142520;
+  --verde-linea:#234036;
+
+  --violeta:      #9b8ce0;
+  --violeta-piel: #1e1b2e;
+  --violeta-linea:#332d4d;
+
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-2: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --sombra-3: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --sombra-pop: 0 12px 40px rgba(0, 0, 0, 0.65);
+
+  color-scheme: dark;
+}
+
+/* ── 2 · capa de alias · lo único que consumen los módulos ───────────────── */
+:root {
+  --bg:        var(--acero-0);
+  --bg-elev:   var(--acero-1);
+  --bg-soft:   var(--acero-2);
+  --line:      var(--bisel-1);
+  --line-soft: var(--bisel-2);
+  --line-strong: var(--bisel-3);
+  --ink:   var(--grafito-1);
+  --ink-2: var(--grafito-2);
+  --ink-3: var(--grafito-3);
+  --ink-4: var(--grafito-4);
+  --primary:      var(--indigo);
+  --primary-deep: var(--indigo-alto);
+  --primary-soft: var(--indigo-piel);
+  --primary-line: var(--indigo-linea);
+  --accion:      var(--senal);
+  --accion-deep: var(--senal-alto);
+  --accion-soft: var(--senal-piel);
+  --accion-line: var(--senal-linea);
+  --danger: var(--rojo);
+  --ok:     var(--verde);
+}
+
+/* ── base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #app { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--fuente);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--fuente-titulo);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Foco visible siempre: esta aplicación se recorre mucho con teclado. */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radio-xs);
+}
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid var(--bg);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-4); }
+
+/* ── armazón ─────────────────────────────────────────────────────────────── */
+.app { min-height: 100vh; }
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 232px;
+  background: var(--bg-elev);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  transition: width 0.16s ease;
+}
+.sidebar-collapsed .sidebar { width: 62px; }
+
+.main { margin-left: 232px; min-height: 100vh; transition: margin-left 0.16s ease; }
+.sidebar-collapsed .main { margin-left: 62px; }
+
+.page { padding: 20px 26px 56px; max-width: 1560px; }
+
+/* ── marca ───────────────────────────────────────────────────────────────── */
+.marca {
+  display: flex; align-items: center; gap: 10px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  min-height: 57px;
+}
+.marca-glifo {
+  width: 28px; height: 28px; flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--radio-sm);
+  background: var(--ink);
+  color: var(--bg-elev);
+  font-family: var(--fuente-titulo);
+  font-weight: 700; font-size: 13px; letter-spacing: -0.04em;
+}
+.marca-texto { min-width: 0; }
+.marca-nombre {
+  font-family: var(--fuente-titulo);
+  font-weight: 700; font-size: 15px; letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.marca-sub {
+  font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-4); font-weight: 500;
+}
+
+/* ── navegación ──────────────────────────────────────────────────────────── */
+.nav { flex: 1; overflow-y: auto; padding: 10px 8px 16px; }
+.nav-seccion + .nav-seccion { margin-top: 14px; }
+.nav-titulo {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.11em;
+  text-transform: uppercase; color: var(--ink-4);
+  padding: 0 8px 6px;
+}
+.sidebar-collapsed .nav-titulo { opacity: 0; height: 8px; overflow: hidden; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; margin-bottom: 1px;
+  border-radius: var(--radio-sm);
+  color: var(--ink-2); font-size: 13px; font-weight: 450;
+  cursor: pointer; white-space: nowrap;
+  border-left: 2px solid transparent;
+}
+.nav-item:hover { background: var(--bg-soft); color: var(--ink); text-decoration: none; }
+.nav-item.activo {
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-weight: 600;
+  border-left-color: var(--primary);
+}
+.nav-item svg { flex: none; }
+.sidebar-collapsed .nav-item span { display: none; }
+.sidebar-collapsed .nav-item { justify-content: center; padding: 8px; }
+
+/* Contador de pendientes: ámbar, porque es exactamente "te espera algo". */
+.nav-pendiente {
+  margin-left: auto;
+  min-width: 19px; height: 19px; padding: 0 5px;
+  display: grid; place-items: center;
+  border-radius: 99px;
+  background: var(--accion); color: #fff;
+  font-family: var(--fuente-mono);
+  font-size: 10.5px; font-weight: 600;
+}
+.sidebar-collapsed .nav-pendiente { display: none; }
+
+.nav-usuario {
+  border-top: 1px solid var(--line-soft);
+  padding: 10px; display: flex; align-items: center; gap: 9px;
+}
+
+/* ── barra superior ──────────────────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  height: 57px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 26px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.migas { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-3); }
+.migas b { color: var(--ink); font-weight: 550; }
+
+/* ── cabecera de página ──────────────────────────────────────────────────── */
+.page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 20px; margin-bottom: 20px;
+}
+.page-eyebrow {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-4); margin-bottom: 5px;
+}
+.page-title { font-size: 25px; letter-spacing: -0.025em; }
+.page-sub { color: var(--ink-3); font-size: 13px; margin-top: 3px; max-width: 68ch; }
+.page-acciones { display: flex; gap: 8px; flex: none; }
+
+/* ── botones ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: var(--radio-sm);
+  background: var(--bg-elev); color: var(--ink-2);
+  font-family: var(--fuente); font-size: 12.5px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.btn:hover:not(:disabled) { background: var(--bg-soft); border-color: var(--line-strong); color: var(--ink); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn.primary:hover:not(:disabled) { background: var(--primary-deep); border-color: var(--primary-deep); color: #fff; }
+
+/* El botón de acción ámbar sólo debe usarse para "resolver lo que espera". */
+.btn.accion { background: var(--accion); border-color: var(--accion); color: #fff; }
+.btn.accion:hover:not(:disabled) { background: var(--accion-deep); border-color: var(--accion-deep); color: #fff; }
+
+.btn.peligro { color: var(--danger); border-color: var(--line); }
+.btn.peligro:hover:not(:disabled) { background: var(--rojo-piel); border-color: var(--rojo-linea); color: var(--danger); }
+
+.btn.sm { height: 26px; padding: 0 9px; font-size: 11.5px; }
+.btn.icono { width: 32px; padding: 0; }
+.btn.icono.sm { width: 26px; }
+.btn.plano { border-color: transparent; background: transparent; }
+.btn.plano:hover:not(:disabled) { background: var(--bg-soft); border-color: transparent; }
+
+/* ── tarjetas ────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra-1);
+}
+.card-head {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.card-titulo {
+  font-family: var(--fuente-titulo);
+  font-size: 13px; font-weight: 600; letter-spacing: -0.005em;
+}
+.card-cuerpo { padding: 15px; }
+
+/* ── bandeja: bloques accionables ────────────────────────────────────────── */
+.bandeja { display: grid; grid-template-columns: repeat(auto-fit, minmax(288px, 1fr)); gap: 14px; }
+
+.bloque {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radio);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+/* La franja superior marca si el bloque espera una decisión. */
+.bloque::before { content: ""; display: block; height: 3px; background: var(--line); }
+.bloque.espera::before { background: var(--accion); }
+.bloque.urgente::before { background: var(--danger); }
+.bloque.ok::before { background: var(--ok); }
+
+.bloque-head { padding: 12px 14px 10px; display: flex; align-items: baseline; gap: 10px; }
+.bloque-n {
+  font-family: var(--fuente-titulo);
+  font-size: 27px; font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+}
+.bloque.espera .bloque-n { color: var(--accion); }
+.bloque.urgente .bloque-n { color: var(--danger); }
+.bloque-label { font-size: 12.5px; font-weight: 550; color: var(--ink-2); }
+.bloque-accion { font-size: 11px; color: var(--ink-4); margin-left: auto; }
+.bloque-lista { border-top: 1px solid var(--line-soft); max-height: 232px; overflow-y: auto; }
+.bloque-fila {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 14px; font-size: 12.5px;
+  border-bottom: 1px solid var(--line-soft); cursor: pointer;
+}
+.bloque-fila:last-child { border-bottom: 0; }
+.bloque-fila:hover { background: var(--bg-soft); }
+.bloque-vacio { padding: 14px; font-size: 12.5px; color: var(--ink-4); }
+
+/* ── tablas ──────────────────────────────────────────────────────────────── */
+.tbl-shell {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+.tbl-scroll { overflow: auto; }
+
+table.stbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+table.stbl thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+table.stbl tbody td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+table.stbl tbody tr:last-child td { border-bottom: 0; }
+.fila-enlace { cursor: pointer; }
+.fila-enlace:hover td { background: var(--bg-soft); }
+
+/* Los códigos van en mono: se comparan con la vista, no se leen como prosa. */
+.mono, .num-cell {
+  font-family: var(--fuente-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.der { text-align: right; }
+.muted { color: var(--ink-4); }
+.nowrap { white-space: nowrap; }
+
+/* ── estado: dos dimensiones en una sola marca ───────────────────────────── */
+/* El documento separa estado operativo y estado administrativo (cap. 25.1).
+   La marca lo refleja: la línea principal es el estado técnico, la inferior el
+   pendiente administrativo, más callada pero siempre visible. */
+.estado { display: inline-flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+.estado-op {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--fuente-titulo);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+}
+.estado-op::before {
+  content: ""; width: 6px; height: 6px; border-radius: 2px; background: currentColor;
+}
+.estado-admin {
+  font-size: 9.5px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--ink-4); font-weight: 500; padding-left: 11px;
+}
+.e-creada           { color: var(--ink-3); }
+.e-en_diagnostico   { color: var(--indigo); }
+.e-en_cotizacion    { color: var(--violeta); }
+.e-en_trabajo       { color: var(--accion); }
+.e-trabajo_realizado{ color: var(--accion-deep); }
+.e-cerrada          { color: var(--ok); }
+.e-cancelada        { color: var(--ink-4); text-decoration: line-through; }
+
+/* ── etiquetas ───────────────────────────────────────────────────────────── */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 19px; padding: 0 7px;
+  border-radius: var(--radio-xs);
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  font-size: 10.5px; font-weight: 550; letter-spacing: 0.02em;
+  color: var(--ink-3); white-space: nowrap;
+}
+.tag.emergencia { background: var(--rojo-piel); border-color: var(--rojo-linea); color: var(--rojo); font-weight: 600; }
+.tag.derivada   { background: var(--violeta-piel); border-color: var(--violeta-linea); color: var(--violeta); }
+.tag.espera     { background: var(--accion-soft); border-color: var(--accion-line); color: var(--accion); }
+.tag.ok         { background: var(--verde-piel); border-color: var(--verde-linea); color: var(--ok); }
+.tag.info       { background: var(--primary-soft); border-color: var(--primary-line); color: var(--primary); }
+.tag.pausada    { background: var(--accion-soft); border-color: var(--accion-line); color: var(--accion-deep); }
+
+.prio { font-family: var(--fuente-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; }
+.p-critica { color: var(--rojo); }
+.p-alta    { color: var(--senal); }
+.p-media   { color: var(--indigo); }
+.p-baja    { color: var(--ink-4); }
+
+/* ── pestañas ────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex; gap: 2px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  border: 0; background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--ink-3);
+  font-family: var(--fuente); font-size: 12.5px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+}
+.tab:hover { color: var(--ink); }
+.tab.activo { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+.tab-n {
+  font-family: var(--fuente-mono); font-size: 10.5px;
+  padding: 1px 5px; border-radius: var(--radio-xs);
+  background: var(--bg-soft); color: var(--ink-3);
+}
+.tab.activo .tab-n { background: var(--primary-soft); color: var(--primary-deep); }
+
+/* ── campos ──────────────────────────────────────────────────────────────── */
+.campo { display: flex; flex-direction: column; gap: 5px; }
+.campo-label { font-size: 11.5px; font-weight: 550; color: var(--ink-2); }
+.campo-ayuda { font-size: 11px; color: var(--ink-4); }
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line); border-radius: var(--radio-sm);
+  background: var(--bg-elev); color: var(--ink);
+  font-family: var(--fuente); font-size: 13px;
+}
+.input:focus, .select:focus, .textarea:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+.textarea { resize: vertical; min-height: 82px; line-height: 1.55; }
+.input::placeholder, .textarea::placeholder { color: var(--ink-4); }
+
+.filtros {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-bottom: 14px;
+}
+.filtros .input, .filtros .select { width: auto; min-width: 150px; height: 32px; padding-top: 0; padding-bottom: 0; }
+
+/* ── vacío ───────────────────────────────────────────────────────────────── */
+/* Una pantalla vacía es una invitación a actuar, no un mensaje de disculpa. */
+.vacio { padding: 44px 20px; text-align: center; }
+.vacio-titulo { font-family: var(--fuente-titulo); font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+.vacio-texto { color: var(--ink-3); font-size: 13px; max-width: 46ch; margin: 0 auto 14px; }
+
+/* ── definiciones ────────────────────────────────────────────────────────── */
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px 22px; }
+.def-k {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 2px;
+}
+.def-v { font-size: 13px; color: var(--ink); }
+
+/* ── utilidades ──────────────────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.fila { display: flex; align-items: center; gap: 8px; }
+.fila-sep { justify-content: space-between; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+.pila { display: flex; flex-direction: column; gap: 14px; }
+.crecer { flex: 1; min-width: 0; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================================
+   LA TARJETA VIAJERA · el elemento distintivo de MIP
+   ----------------------------------------------------------------------------
+   En un taller, cada trabajo lleva una tarjeta física que lo acompaña y que se
+   va sellando en cada estación: quién la tocó, cuándo y por qué. Eso es
+   exactamente lo que guarda la columna `trazabilidad` de la OT.
+   Aquí esa tarjeta se dibuja: una espiga vertical con sellos en orden, y las OT
+   derivadas colgando como espigas hijas.
+
+   Es el único sitio donde esta interfaz se permite ser expresiva. Todo lo demás
+   se mantiene deliberadamente callado para que esto destaque.
+   ========================================================================== */
+
+.viajera { position: relative; padding-left: 26px; }
+
+/* La espiga: el hilo que recorre toda la vida de la OT. */
+.viajera::before {
+  content: "";
+  position: absolute;
+  left: 7px; top: 6px; bottom: 6px;
+  width: 2px;
+  background: linear-gradient(to bottom,
+    var(--line-strong) 0%,
+    var(--line) 88%,
+    transparent 100%);
+  border-radius: 2px;
+}
+
+.sello { position: relative; padding: 0 0 16px 0; }
+
+/* La marca del sello sobre la espiga. */
+.sello::before {
+  content: "";
+  position: absolute;
+  left: -23px; top: 5px;
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  background: var(--bg-elev);
+  border: 2px solid var(--line-strong);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+.sello.hito::before { border-color: var(--ink); background: var(--ink); }
+.sello.espera::before { border-color: var(--accion); background: var(--accion); }
+.sello.alerta::before { border-color: var(--danger); background: var(--danger); }
+.sello.cierre::before { border-color: var(--ok); background: var(--ok); }
+.sello.humano::before { border-color: var(--primary); background: var(--bg-elev); }
+
+.sello-cab { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sello-titulo {
+  font-family: var(--fuente-titulo);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+  color: var(--ink);
+}
+.sello-meta {
+  font-family: var(--fuente-mono);
+  font-size: 10.5px; color: var(--ink-4);
+}
+.sello-cuerpo { font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+
+/* El motivo es lo que el documento exige conservar en cada acción sensible;
+   se marca visualmente para que no se pierda entre los datos. */
+.sello-motivo {
+  margin-top: 5px;
+  padding: 6px 9px;
+  border-left: 2px solid var(--accion-line);
+  background: var(--accion-soft);
+  border-radius: 0 var(--radio-xs) var(--radio-xs) 0;
+  font-size: 12px; color: var(--ink-2);
+}
+.sello-motivo b {
+  display: block;
+  font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--accion-deep); font-weight: 600; margin-bottom: 1px;
+}
+
+/* Cambio de valor: antes → después, en mono para poder compararlos de un vistazo. */
+.sello-cambio {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--fuente-mono); font-size: 11px;
+  margin-top: 4px;
+}
+.sello-cambio .antes { color: var(--ink-4); text-decoration: line-through; }
+.sello-cambio .flecha { color: var(--ink-4); }
+.sello-cambio .despues { color: var(--ink); font-weight: 600; }
+
+/* ── versiones: lo que se reemplazó nunca desaparece ─────────────────────── */
+.version {
+  border: 1px solid var(--line);
+  border-radius: var(--radio-sm);
+  padding: 11px 13px;
+  background: var(--bg-elev);
+}
+.version + .version { margin-top: 8px; }
+/* Una versión reemplazada se apaga, pero sigue ahí y sigue siendo legible:
+   el documento prohíbe destruir historia (cap. 18.1). */
+.version.reemplazada { background: var(--bg-soft); border-style: dashed; }
+.version.reemplazada .version-cuerpo { color: var(--ink-3); }
+.version-cab { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.version-n {
+  font-family: var(--fuente-mono); font-size: 10.5px; font-weight: 600;
+  padding: 1px 6px; border-radius: var(--radio-xs);
+  background: var(--bg-soft); color: var(--ink-3);
+  border: 1px solid var(--line);
+}
+.version.vigente .version-n {
+  background: var(--verde-piel); border-color: var(--verde-linea); color: var(--ok);
+}
+.version-cuerpo { font-size: 12.5px; color: var(--ink-2); }
+.version-campo + .version-campo { margin-top: 7px; }
+.version-campo-k {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 1px;
+}
+
+/* ── jerarquía de derivadas ──────────────────────────────────────────────── */
+.arbol { font-size: 12.5px; }
+.arbol-nodo {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radio-sm);
+  background: var(--bg-elev);
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+.arbol-nodo:hover { border-color: var(--line-strong); background: var(--bg-soft); }
+.arbol-nodo.actual { border-color: var(--primary); background: var(--primary-soft); }
+/* La sangría codifica el nivel real de derivación, no una decoración. */
+.arbol-hijos {
+  margin-left: 17px; padding-left: 13px;
+  border-left: 1px dashed var(--violeta-linea);
+}
+.arbol-bloqueante {
+  font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--rojo); font-weight: 600;
+}
+
+/* ── conversación ────────────────────────────────────────────────────────── */
+.msg { display: flex; gap: 10px; padding: 9px 0; }
+.msg + .msg { border-top: 1px solid var(--line-soft); }
+.msg-avatar {
+  width: 27px; height: 27px; flex: none;
+  border-radius: var(--radio-sm);
+  display: grid; place-items: center;
+  background: var(--bg-soft); border: 1px solid var(--line);
+  font-family: var(--fuente-titulo); font-size: 10.5px; font-weight: 600;
+  color: var(--ink-3);
+}
+.msg-cuerpo { flex: 1; min-width: 0; }
+.msg-cab { display: flex; align-items: baseline; gap: 8px; }
+.msg-autor { font-size: 12.5px; font-weight: 600; }
+.msg-hora { font-family: var(--fuente-mono); font-size: 10.5px; color: var(--ink-4); }
+.msg-texto { font-size: 13px; color: var(--ink-2); margin-top: 2px; white-space: pre-wrap; }
+/* Nota interna: el solicitante no la ve, y quien la escribe debe saberlo. */
+.msg.interna .msg-cuerpo {
+  background: var(--accion-soft);
+  border: 1px dashed var(--accion-line);
+  border-radius: var(--radio-sm);
+  padding: 7px 9px;
+}
+.msg.sistema .msg-texto { color: var(--ink-3); font-style: italic; }
+.msg.retirado .msg-texto { color: var(--ink-4); font-style: italic; }
+
+/* ── carga ───────────────────────────────────────────────────────────────── */
+.cargando { padding: 32px; text-align: center; color: var(--ink-4); font-size: 13px; }
+.barra-carga {
+  height: 2px; background: var(--line-soft); border-radius: 2px; overflow: hidden;
+}
+.barra-carga::after {
+  content: ""; display: block; height: 100%; width: 34%;
+  background: var(--primary);
+  animation: deslizar 1.05s ease-in-out infinite;
+}
+@keyframes deslizar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}

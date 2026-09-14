@@ -1,0 +1,44 @@
+/* ============================================================================
+   SweetAlert2 vestido con los tokens de MIP.
+   Sin esto los diálogos ignoran el modo oscuro y rompen la coherencia visual,
+   que es justamente el motivo por el que useNotify es el único canal permitido.
+   ========================================================================== */
+.swal2-container { z-index: 9999; }
+
+.swal-mip {
+  background: var(--bg-elev) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radio-lg) !important;
+  box-shadow: var(--sombra-pop) !important;
+  font-family: var(--fuente) !important;
+}
+.swal-mip .swal2-title {
+  font-family: var(--fuente-titulo) !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em;
+  color: var(--ink) !important;
+}
+.swal-mip .swal2-html-container { color: var(--ink-2) !important; font-size: 13.5px !important; }
+.swal-mip .swal2-actions { gap: 8px; }
+.swal-mip .swal2-input,
+.swal-mip .swal2-textarea,
+.swal-mip .swal2-select {
+  background: var(--bg-elev) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radio-sm) !important;
+  font-family: var(--fuente) !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+}
+.swal-mip .swal2-textarea { min-height: 92px; }
+.swal-mip-error,
+.swal-mip .swal2-validation-message {
+  background: var(--rojo-piel) !important;
+  color: var(--rojo) !important;
+  border-radius: var(--radio-sm);
+  font-size: 12px !important;
+}
+.swal-mip .swal2-icon { border-color: var(--line) !important; }
