@@ -104,7 +104,7 @@ bash db/scripts/apply-migrations.sh
 # 3 · backend  → http://localhost:3200/api
 cd backend && npm install && npm run start:dev
 
-# 4 · frontend → http://localhost:5180
+# 4 · frontend → http://localhost:5174
 cd frontend && npm install && npm run dev
 ```
 
@@ -114,6 +114,37 @@ Los puertos están deliberadamente desplazados de los habituales para poder tene
 otros proyectos levantados a la vez.
 
 ## Verificar
+
+```bash
+bash scripts/pruebas.sh           # suite de regresión: flujos + seguridad + bloqueo
+```
+
+Es la que debe pasar antes de aprobar un despliegue, y está pensada para que la
+ejecute el área de sistemas del cliente sin leerse el código. Son cinco bloques:
+
+| Bloque | Qué comprueba |
+|---|---|
+| `scripts/pruebas-flujos.mjs` | Los 75 pasos del producto, **llamando a la API igual que lo hacen las pantallas** |
+| `scripts/pruebas-qa.mjs` | **Los 30 criterios de aceptación del documento funcional**, uno a uno y por su número |
+| `scripts/pruebas-seguridad.mjs` | Anexo B por rol, escalada de privilegios, aislamiento entre clientes, inyección SQL, sesión, fuerza bruta y cabeceras |
+| `scripts/pruebas-cotizacion-pdf.mjs` | Lectura del PDF del proveedor, carga de la cotización, archivo del documento y descarga acotada al cliente |
+| `db/scripts/smoke-bloqueo-credenciales.sql` | El bloqueo de cuenta tras intentos fallidos, en la base |
+
+El límite de intentos de login se aplica también a la suite: los bloques gastan
+la cuota del minuto entre ellos y el arranque de cada uno espera a que la
+ventana se renueve. Es a propósito —relajar la protección para que las pruebas
+sean cómodas dejaría el sistema abierto a fuerza bruta.
+
+`pruebas-qa.mjs` existe para que el cliente pueda pedir *"demuéstrame QA-16"* y
+se le responda con una ejecución en vez de una explicación. Cada comprobación
+cita lo que exige el documento antes de verificarlo.
+
+> **Por qué existe además de los smoke anteriores.** Los smoke de abajo conducen
+> la máquina de estados a mano (`PATCH /ot/:id/estado`, `sp_ot_cambiar_estado`),
+> un camino que **ninguna pantalla usa**. Eso los dejaba en verde mientras el
+> producto era inusable por la interfaz: registrar un diagnóstico no sacaba la OT
+> de `creada`, así que cotizar, ejecutar y cerrar eran inalcanzables. Una prueba
+> que se salta el camino real del usuario no prueba el producto: prueba la base.
 
 ```bash
 bash db/scripts/smoke.sh          # ciclo completo por SP + integridad del árbol
@@ -153,6 +184,138 @@ documento, y están implementadas donde no se pueden esquivar.
 | Nada se borra: se cancela, versiona, inactiva o anula | `deleted_at`, versionado, `DELETE` revocado |
 | El solicitante no ve costos, RUC, CECOS ni cotizaciones | poda en `app.fn_ot_obtener`, no en el frontend |
 | Un promedio no se publica sin muestra suficiente | `fn_costo_historico`, umbral por tenant |
+
+## Datos de demostración
+
+```bash
+bash scripts/preparar-demo.sh
+```
+
+Hace el ciclo entero: pasa la suite, **borra todo lo transaccional** (incluido lo
+que dejaron las pruebas), siembra un juego de muestra y comprueba que el árbol de
+trazabilidad quedó íntegro. Si la suite falla no siembra nada: no tiene sentido
+enseñar un sistema que no pasa sus propias pruebas.
+
+Lo que queda: 13 OT repartidas por **todos** los estados del Anexo A —incluidas
+una emergencia sin regularizar, un padre con dos derivadas, una cancelada y una
+reabierta—, 19 solicitudes con su cola sin revisar, 9 personas con sus roles y 8
+costos con su texto original. Suficiente para que ninguna pantalla salga vacía y
+poco bastante para poder leerla.
+
+Los datos se crean **llamando a la API**, no insertando filas: así los
+diagnósticos se versionan de verdad y el árbol lo construye el motor. Unos
+`INSERT` directos darían una pantalla bonita y una trazabilidad falsa.
+
+| Paso | Script |
+|---|---|
+| Borrar lo transaccional | `db/scripts/limpiar-transaccional.sql` |
+| Sembrar la muestra | `scripts/datos-demo.mjs` |
+| Repartir las fechas en el tiempo | `db/scripts/fechas-demo.sql` |
+
+Los tres exigen confirmación explícita y **no deben correr contra datos reales**.
+El de fechas desactiva un instante el trigger que hace append-only la bitácora,
+dentro de la misma transacción que lo vuelve a activar; es la única forma de
+mover hechos ya sellados, y por eso vive aparte y avisa.
+
+Acceso de demostración: cualquier correo `@demoindustrial.pe` con `Demo.MIP.2026`.
+La coordinadora es `rosa.quispe@demoindustrial.pe`; el super admin sigue siendo
+`admin@mip.local`.
+
+
+### Llevárselo a otra máquina
+
+```bash
+bash db/scripts/restaurar-dump.sh
+```
+
+`db/dump/mip_demo.sql` es el sistema entero en un archivo: esquemas, tablas,
+triggers, los 93 stored procedures donde vive la lógica, y el juego de datos de
+muestra con su árbol de trazabilidad ya construido. Restaura en un minuto, sin
+aplicar migraciones ni sembrar nada, y sirve para enseñar el producto en un
+portátil o en un servidor de pruebas.
+
+El volcado se genera sin dueño ni permisos para que entre bajo cualquier
+usuario; el script aplica después `90_grants.sql`, que crea el rol de la API y
+le da EXECUTE sobre `app` y nada más. Funciona con la base en Docker o contra un
+PostgreSQL normal:
+
+```bash
+DB_CONTAINER="" DB_HOST=mi-servidor bash db/scripts/restaurar-dump.sh
+```
+
+Para un entorno real el camino sigue siendo el largo —`apply-migrations.sh` y
+sembrar por la API—, porque es el que deja la base construida por su propia
+historia. **El volcado son datos de demostración y borra la base de destino: no
+va sobre datos reales.**
+
+## Integración continua
+
+`.github/workflows/ci.yml` levanta Postgres y Redis de verdad —no dobles—, aplica
+las migraciones dos veces para probar su idempotencia, comprueba tipos y estilo,
+compila, arranca la API y pasa la suite completa más los invariantes de la base.
+Toda la lógica vive en stored procedures: una prueba contra una base simulada no
+probaría el producto.
+
+## Seguridad
+
+Lo que un área de sistemas pregunta en la revisión previa, y dónde está resuelto.
+
+| Control | Dónde vive |
+|---|---|
+| Permisos por rol (Anexo B) | Los comprueba el stored procedure, no el frontend: forzar un botón no sirve de nada |
+| Aislamiento entre clientes | `internal.assert_acceso_tenant` en cada SP; un id de otro tenant responde 404, sin confirmar que existe |
+| Alcance por sucursal/empresa/área | `internal.assert_alcance` |
+| Adjuntos | Se piden por id, no por clave de almacén: `app.fn_adjunto_obtener` comprueba tenant y alcance antes de firmar una URL temporal, y la clave nunca llega al navegador |
+| Contraseñas | `pgcrypto` con bcrypt coste 12; el hash nunca sale de la transacción |
+| Fuerza bruta | Dos capas: bloqueo de la **cuenta** a los 5 fallos (configurable por tenant, clave `bloqueo_credenciales`) y tope por **IP** en los endpoints de autenticación |
+| Intentos fallidos | Cada uno queda en `audit.audit_log` como `login_fallido`, con el contador y el umbral |
+| Inyección SQL | Todo entra como parámetro de un SP; nada se concatena |
+| Cabeceras | CSP `default-src 'none'`, HSTS, `nosniff`, `frame-ancestors 'none'`, `no-referrer` |
+| Terceros en el navegador | Ninguno: las tipografías se sirven desde la propia aplicación |
+| Auditoría | Campo a campo, con autor, instante y motivo; la bitácora es inmutable por trigger |
+
+El bloqueo de credenciales se ajusta por cliente sin tocar código:
+
+```sql
+UPDATE core.tenant_configuracion
+   SET valor = '{"intentos":3,"minutos":30}'::jsonb
+ WHERE clave = 'bloqueo_credenciales';
+```
+
+## La cotización del proveedor llega en PDF
+
+El coordinador sube el PDF y el sistema **rellena el formulario con lo que dice
+el documento**: proveedor, RUC, número, fecha, importe, moneda, plazo y validez.
+Nada se guarda en ese momento. Lo leído se muestra marcado, la persona lo
+confirma o lo corrige, y recién al guardar se crea la cotización y se archiva el
+PDF junto a esa versión, con un botón para volver a abrirlo.
+
+Cada campo sale con la confianza con la que se obtuvo, en el mismo idioma de
+color que el resto del sistema:
+
+| Marca | Qué significa |
+|---|---|
+| **DEL PDF** (esmeralda) | La etiqueta estaba escrita en el documento: *"TOTAL A PAGAR S/ 4,661.00"* |
+| **REVÍSELO** (ámbar) | Se dedujo por posición o por descarte. El formulario muestra la línea exacta de la que salió |
+
+**No es OCR ni un modelo de lenguaje.** Es lectura de la capa de texto que el
+propio PDF ya trae, más reglas sobre cómo se escriben las cotizaciones en el
+Perú: dígito verificador del RUC módulo 11, el RUC del cliente descartado
+—incluido cuando cuelga del renglón de *"Señores:"*—, importes en formato
+peruano (`1,234.56`) o europeo (`1.234,56`), y el total distinguido del subtotal
+y del IGV.
+
+Esa decisión responde al cap. 38, que deja la automatización como decisión
+pendiente del cliente y advierte que *"afecta calidad, costo y privacidad
+documental"*. Leyendo en el propio servidor: **el documento del proveedor no
+sale de la red del cliente**, no cuesta por página y no hay nada que un área
+legal tenga que autorizar.
+
+El precio es explícito: un PDF escaneado —una foto, un fax— no tiene texto que
+leer. Eso no se disimula, se dice (*"es un escaneo o una foto; el archivo queda
+adjunto igual, pero los datos hay que escribirlos a mano"*) y el formulario
+sigue funcionando como siempre. Si el cliente decide más adelante invertir en
+OCR, entra detrás de esta misma pantalla sin cambiarle el flujo a nadie.
 
 ## Sobre SAP
 
