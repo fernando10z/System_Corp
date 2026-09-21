@@ -15,7 +15,10 @@ const rutas = [
       { path: "inicio", name: "inicio", component: () => import("../modules/inicio/pages/Inicio.vue") },
 
       { path: "solicitudes", name: "solicitudes", component: () => import("../modules/solicitudes/pages/Solicitudes.vue") },
-      { path: "solicitudes/nueva", name: "solicitud-nueva", component: () => import("../modules/solicitudes/pages/SolicitudNueva.vue") },
+      // Reportar es un modal sobre el listado, no una pantalla aparte: se
+      // reporta desde donde se está. La ruta se conserva porque hay enlaces
+      // que apuntan a ella.
+      { path: "solicitudes/nueva", redirect: { path: "/solicitudes", query: { nueva: "1" } } },
       { path: "solicitudes/:id", name: "solicitud-detalle", component: () => import("../modules/solicitudes/pages/SolicitudDetalle.vue") },
 
       { path: "ot", name: "ot", component: () => import("../modules/ot/pages/OrdenesTrabajo.vue") },

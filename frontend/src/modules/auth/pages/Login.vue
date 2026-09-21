@@ -1,72 +1,112 @@
 <template>
-  <div class="entrada">
-    <!--
-      El lado izquierdo no es una imagen decorativa: es la tesis del producto.
-      Una OT y todo lo que generó, colgando de ella. Es lo que MIP hace.
-    -->
-    <aside class="entrada-tesis" aria-hidden="true">
-      <div class="tesis-marca">
-        <div class="marca-glifo">M</div>
-        <div>
-          <div class="marca-nombre" style="color: inherit">MIP</div>
-          <div class="marca-sub">Maintenance Intelligence Platform</div>
-        </div>
-      </div>
+  <div class="login-hero">
+    <!-- Izquierda: la puerta. Nada que distraiga de las dos cajas y el botón. -->
+    <div class="login-col">
+      <div class="login-card">
+        <div class="login-logo" aria-hidden="true"><Wrench :size="24" /></div>
+        <h1>MIP</h1>
+        <p class="lf-sub">Maintenance Intelligence Platform.<br />Entre con el correo con el que le dieron de alta.</p>
 
-      <div class="tesis-cuerpo">
-        <h2 class="tesis-titulo">Una orden de trabajo,<br />y todo lo que generó.</h2>
-        <div class="viajera tesis-arbol">
-          <div v-for="(s, i) in muestra" :key="i" class="sello" :class="s.clase" :style="{ animationDelay: i * 90 + 'ms' }">
-            <div class="sello-cab">
-              <span class="sello-titulo">{{ s.t }}</span>
-              <span class="sello-meta">{{ s.m }}</span>
+        <form class="lf" @submit.prevent="entrar">
+          <p v-if="error" class="lf-error" role="alert"><TriangleAlert :size="15" /> {{ error }}</p>
+
+          <div class="lf-field">
+            <label for="email">Correo</label>
+            <div class="lf-wrap" :class="{ error: !!error }">
+              <Mail :size="15" />
+              <input
+                id="email" v-model.trim="email" type="email"
+                autocomplete="username" required autofocus placeholder="nombre@empresa.com"
+              />
             </div>
           </div>
-        </div>
-        <p class="tesis-pie">
-          Cada decisión queda sellada con su autor, su instante y su motivo.
-          Nada se sobrescribe.
-        </p>
-      </div>
-    </aside>
 
-    <main class="entrada-form">
-      <div class="entrada-caja">
-        <h1 class="page-title" style="font-size: 22px">Entrar</h1>
-        <p class="page-sub" style="margin-bottom: 22px">Use el correo con el que le dieron de alta.</p>
-
-        <form class="col" style="gap: 14px" @submit.prevent="entrar">
-          <div class="campo">
-            <label class="campo-label" for="email">Correo</label>
-            <input
-              id="email" v-model.trim="email" class="input" type="email"
-              autocomplete="username" required autofocus placeholder="nombre@empresa.com"
-            />
+          <div class="lf-field">
+            <label for="password">Contraseña</label>
+            <div class="lf-wrap" :class="{ error: !!error }">
+              <KeyRound :size="15" />
+              <input
+                id="password" v-model="password" :type="verClave ? 'text' : 'password'"
+                autocomplete="current-password" required placeholder="··········"
+              />
+              <button
+                type="button" class="lf-eye"
+                :aria-label="verClave ? 'Ocultar la contraseña' : 'Mostrar la contraseña'"
+                @click="verClave = !verClave"
+              >
+                <EyeOff v-if="verClave" :size="15" />
+                <Eye v-else :size="15" />
+              </button>
+            </div>
           </div>
 
-          <div class="campo">
-            <label class="campo-label" for="password">Contraseña</label>
-            <input
-              id="password" v-model="password" class="input" type="password"
-              autocomplete="current-password" required
-            />
-          </div>
-
-          <!-- El error dice qué pasó, sin disculparse ni ser vago. -->
-          <p v-if="error" role="alert" class="entrada-error">{{ error }}</p>
-
-          <button class="btn primary" type="submit" :disabled="cargando" style="height: 38px">
+          <button class="lf-submit" type="submit" :disabled="cargando">
+            <span v-if="cargando" class="spinner" />
             {{ cargando ? "Comprobando…" : "Entrar" }}
+            <ArrowRight v-if="!cargando" :size="16" />
           </button>
         </form>
+
+        <p class="lf-foot">Cada decisión queda sellada · nada se sobrescribe</p>
       </div>
-    </main>
+    </div>
+
+    <!--
+      Derecha: la tesis del producto, no una ilustración decorativa. Una OT y
+      todo lo que generó colgando de ella. Es literalmente lo que MIP hace.
+    -->
+    <div class="login-col derecha">
+      <div class="login-tesis">
+        <div class="eyebrow">La orden de trabajo como raíz</div>
+        <h2>Una orden de trabajo,<br />y todo lo que generó.</h2>
+        <p class="lead">
+          El diagnóstico que cambió, la cotización que lo reemplazó, la derivada que bloqueó el cierre y
+          la OC que llegó tarde. Todo cuelga de la misma OT, con su autor, su instante y su motivo.
+        </p>
+
+        <div class="tesis-card">
+          <div class="tesis-card-head">
+            <span class="icon-tile"><ClipboardList :size="14" /></span>
+            <span class="n">OT-000148</span>
+            <span class="estado-op e-en_trabajo">En trabajo</span>
+            <span class="crecer" />
+            <span class="tag emergencia">Emergencia</span>
+          </div>
+
+          <div class="viajera">
+            <article
+              v-for="(s, i) in muestra"
+              :key="i"
+              class="sello tesis-sello"
+              :class="s.clase"
+              :style="{ animationDelay: i * 90 + 'ms' }"
+            >
+              <div class="sello-cab">
+                <span class="sello-titulo">{{ s.t }}</span>
+                <span class="sello-meta">{{ s.m }}</span>
+              </div>
+              <div v-if="s.motivo" class="sello-motivo"><b>Motivo</b>{{ s.motivo }}</div>
+            </article>
+          </div>
+        </div>
+
+        <div class="tesis-chips">
+          <span class="tesis-chip"><GitBranch :size="14" /> Derivadas recursivas</span>
+          <span class="tesis-chip"><History :size="14" /> Versiones que no se pisan</span>
+          <span class="tesis-chip"><ShieldCheck :size="14" /> Auditoría campo a campo</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import {
+  ArrowRight, ClipboardList, Eye, EyeOff, GitBranch, History, KeyRound, Mail,
+  ShieldCheck, TriangleAlert, Wrench,
+} from "lucide-vue-next";
 import { useAuth } from "../../../shared/composables/useAuth.js";
 
 const router = useRouter();
@@ -75,15 +115,16 @@ const { login } = useAuth();
 
 const email = ref("");
 const password = ref("");
+const verClave = ref(false);
 const cargando = ref(false);
 const error = ref("");
 
 // Muestra estática: ilustra la idea sin fingir datos de un cliente real.
 const muestra = [
   { t: "Solicitud recibida", m: "ST-000148", clase: "hito" },
-  { t: "Diagnóstico v2", m: "reemplaza v1", clase: "" },
-  { t: "Cotización cargada", m: "S/ 2 850", clase: "" },
-  { t: "Derivada OT-000149", m: "otro proveedor", clase: "espera" },
+  { t: "Diagnóstico v2", m: "reemplaza a v1", clase: "", motivo: "El desmontaje descartó la causa inicial" },
+  { t: "Cotización cargada", m: "S/ 2 850,00", clase: "" },
+  { t: "Derivada OT-000149", m: "otra especialidad", clase: "espera" },
   { t: "Cierre con OC pendiente", m: "revisado", clase: "cierre" },
 ];
 
@@ -94,79 +135,16 @@ async function entrar() {
     await login(email.value, password.value);
     router.push(route.query.desde ?? "/inicio");
   } catch (e) {
+    // El servidor distingue "credenciales inválidas" de "cuenta bloqueada" y de
+    // "cuenta inactiva". Sustituir todo por un mensaje genérico dejaría a
+    // alguien bloqueado reintentando sin entender por qué, y alargando su
+    // propio bloqueo. Sólo se suaviza el caso genérico.
     error.value =
-      e.code === "UNAUTHORIZED"
-        ? "El correo o la contraseña no coinciden."
-        : e.message || "No se pudo entrar. Inténtelo otra vez.";
+      e.message && !/credenciales inválidas/i.test(e.message)
+        ? e.message
+        : "El correo o la contraseña no coinciden.";
   } finally {
     cargando.value = false;
   }
 }
 </script>
-
-<style scoped>
-.entrada { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 100vh; }
-
-.entrada-tesis {
-  background: var(--grafito-1);
-  color: #f2f4f5;
-  padding: 34px 40px;
-  display: flex; flex-direction: column; gap: 40px;
-  position: relative; overflow: hidden;
-}
-/* Trama tenue de plano técnico. Se queda en el fondo y no compite con nada. */
-.entrada-tesis::after {
-  content: ""; position: absolute; inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 34px 34px;
-  pointer-events: none;
-}
-.tesis-marca { display: flex; align-items: center; gap: 11px; position: relative; z-index: 1; }
-.tesis-marca .marca-glifo { background: var(--senal); color: var(--grafito-1); }
-.tesis-marca .marca-sub { color: rgba(242,244,245,0.55); }
-
-.tesis-cuerpo { position: relative; z-index: 1; margin: auto 0; max-width: 430px; }
-.tesis-titulo {
-  font-size: 33px; line-height: 1.15; letter-spacing: -0.03em;
-  margin-bottom: 26px; font-weight: 600;
-}
-.tesis-arbol { padding-left: 24px; }
-/* Dentro del panel oscuro los tokens claros no sirven: se fija la paleta local. */
-.tesis-arbol::before { background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent); }
-.tesis-arbol .sello { padding-bottom: 13px; animation: sello-entra 0.4s ease both; }
-.tesis-arbol .sello::before {
-  background: var(--grafito-1);
-  border-color: rgba(255,255,255,0.35);
-  box-shadow: 0 0 0 3px var(--grafito-1);
-}
-.tesis-arbol .sello.hito::before { background: #f2f4f5; border-color: #f2f4f5; }
-.tesis-arbol .sello.espera::before { background: var(--senal); border-color: var(--senal); }
-.tesis-arbol .sello.cierre::before { background: var(--verde); border-color: var(--verde); }
-.tesis-arbol .sello-titulo { color: #f2f4f5; }
-.tesis-arbol .sello-meta { color: rgba(242,244,245,0.5); }
-.tesis-pie { margin-top: 26px; color: rgba(242,244,245,0.6); font-size: 13px; max-width: 40ch; }
-
-@keyframes sello-entra {
-  from { opacity: 0; transform: translateX(-7px); }
-  to   { opacity: 1; transform: none; }
-}
-
-.entrada-form { display: grid; place-items: center; padding: 34px; background: var(--bg); }
-.entrada-caja { width: 100%; max-width: 348px; }
-.entrada-error {
-  margin: 0;
-  padding: 8px 11px;
-  border-radius: var(--radio-sm);
-  background: var(--rojo-piel);
-  border: 1px solid var(--rojo-linea);
-  color: var(--rojo);
-  font-size: 12.5px;
-}
-
-@media (max-width: 900px) {
-  .entrada { grid-template-columns: 1fr; }
-  .entrada-tesis { display: none; }
-}
-</style>

@@ -9,6 +9,7 @@
       :aria-selected="t.key === activo"
       @click="$emit('cambiar', t.key)"
     >
+      <component :is="t.icono" v-if="t.icono" :size="14" />
       {{ t.label }}
       <span v-if="t.n !== undefined && t.n !== null" class="tab-n">{{ t.n }}</span>
     </button>

@@ -6,59 +6,173 @@
       subtitle="Un usuario con historial se inactiva, nunca se elimina: sus OT, mensajes y diagnósticos conservan su autoría."
     >
       <template #acciones>
-        <button class="btn primary" @click="crear"><Plus :size="14" /> Nuevo usuario</button>
+        <button class="btn primary" @click="abrirAlta"><Plus :size="14" /> Nuevo usuario</button>
       </template>
     </PageHeader>
 
-    <div class="filtros">
-      <input v-model.trim="f.buscar" class="input" placeholder="Buscar por nombre o correo…" @keyup.enter="cargar(1)" />
-      <select v-model="f.estado" class="select" @change="cargar(1)">
-        <option value="">Todos</option><option value="activo">Activos</option><option value="inactivo">Inactivos</option>
-      </select>
-    </div>
+    <ModuloPanel titulo="Equipo" :icono="Users" :conteo="meta?.total ?? null" a-sangre>
+      <template #acciones>
+        <BotonExportar nombre="usuarios" :columnas="COLUMNAS_EXCEL" :filas="visibles" :traer-todo="traerTodo" />
+      </template>
 
-    <div class="tbl-shell">
-      <Cargando v-if="cargando" />
-      <template v-else>
-        <table class="stbl">
-          <thead><tr><th>Nombre</th><th>Correo</th><th>Roles</th><th>Cargo</th><th>Estado</th><th>Último acceso</th><th></th></tr></thead>
+      <template #filtros>
+        <div class="fil grow">
+          <Search :size="14" />
+          <input v-model.trim="f.buscar" placeholder="Buscar por nombre o correo…" @keyup.enter="cargar(1)" />
+        </div>
+        <RangoFechas v-model:desde="f.desde" v-model:hasta="f.hasta" placeholder="Alta: todo el periodo" @cambiar="cargar(1)" />
+        <SelectMenu v-model="f.estado" sabor="fil" :opciones="OPC_ESTADO" @change="cargar(1)" />
+        <SelectMenu v-model="f.rol" sabor="fil" :opciones="opcRoles" @change="cargar(1)" />
+        <div class="toolbar-spacer" />
+        <button v-if="hayFiltros" class="chip-filter" @click="limpiar"><X :size="13" /> Limpiar filtros</button>
+      </template>
+
+      <Cargando v-if="cargando" :filas="6" />
+
+      <div v-else-if="filas.length" class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th v-for="c in COLUMNAS" :key="c.key">{{ c.label }}</th>
+              <th class="acciones-col">Acciones</th>
+            </tr>
+            <FilaFiltros :columnas="[...COLUMNAS, { key: '_', filtro: 'limpiar' }]" v-model="filtros" />
+          </thead>
           <tbody>
-            <tr v-for="u in filas" :key="u.id">
-              <td><b>{{ u.nombre }}</b></td>
-              <td class="mono muted">{{ u.email }}</td>
+            <tr v-for="u in visibles" :key="u.id">
               <td>
-                <span v-for="r in u.roles" :key="r.id" class="tag" style="margin-right: 4px">{{ r.nombre }}</span>
-                <span v-if="!u.roles.length" class="muted">Sin rol</span>
+                <div class="entidad-cell">
+                  <Avatar :nombre="u.nombre" :color="u.estado === 'activo' ? '' : 'neutral'" />
+                  <div class="info">
+                    <strong>{{ u.nombre }}</strong>
+                    <small class="mono">{{ u.email }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="fila fila-wrap" style="gap: 4px">
+                  <span v-for="r in u.roles" :key="r.id" class="tag">{{ r.nombre }}</span>
+                  <span v-if="!u.roles.length" class="mas-muted" style="font-size: 12px">Sin rol</span>
+                </div>
               </td>
               <td class="muted">{{ u.cargo ?? "—" }}</td>
-              <td><span class="tag" :class="u.estado === 'activo' ? 'ok' : ''">{{ etiqueta(u.estado) }}</span></td>
-              <td class="mono muted">{{ u.ultimo_acceso_at ? desde(u.ultimo_acceso_at) : "nunca" }}</td>
-              <td class="der">
-                <button v-if="u.estado === 'activo'" class="btn sm peligro" @click="inactivar(u)">Inactivar</button>
+              <td>
+                <span class="estado-pill" :class="u.estado === 'activo' ? 'ok' : 'neutral'">
+                  <span class="dot" />{{ etiqueta(u.estado) }}
+                </span>
+              </td>
+              <td class="mono muted nowrap">{{ u.ultimo_acceso_at ? desde(u.ultimo_acceso_at) : "nunca" }}</td>
+              <td class="acciones-col">
+                <div class="row-actions">
+                  <button class="row-action" title="Editar datos y roles" @click="abrirEdicion(u)">
+                    <Pencil :size="15" />
+                  </button>
+                  <button class="row-action" title="Restablecer contraseña" @click="passwordDe = u">
+                    <KeyRound :size="15" />
+                  </button>
+                  <button
+                    v-if="u.estado === 'activo'"
+                    class="row-action peligro"
+                    title="Inactivar"
+                    @click="inactivar(u)"
+                  >
+                    <UserMinus :size="15" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+
+        <div v-if="!visibles.length" class="vacio" style="padding: 40px 20px">
+          <div class="vacio-titulo">Ninguna fila pasa los filtros de columna</div>
+          <button class="btn" @click="filtros = {}">Quitar filtros de columna</button>
+        </div>
+      </div>
+
+      <Vacio
+        v-else
+        :icono="Users"
+        titulo="Ningún usuario con esos filtros"
+        texto="Cree el primer usuario o quite los filtros para ver el equipo completo."
+      >
+        <button class="btn primary" @click="abrirAlta">Nuevo usuario</button>
+      </Vacio>
+
+      <template v-if="!cargando && filas.length" #pie>
         <Paginacion :meta="meta" @ir="cargar" />
       </template>
-    </div>
+    </ModuloPanel>
+
+    <UsuarioModal :abierto="modal" :usuario="editando" @cerrar="cerrarModal" @guardado="alGuardar" />
+    <PasswordModal :abierto="!!passwordDe" :usuario="passwordDe" @cerrar="passwordDe = null" @hecho="passwordDe = null" />
   </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
-import { Plus } from "lucide-vue-next";
+import { computed, onMounted, reactive, ref, toRef } from "vue";
+import { KeyRound, Pencil, Plus, Search, UserMinus, Users, X } from "lucide-vue-next";
 import PageHeader from "../../../layouts/PageHeader.vue";
+import ModuloPanel from "../../../shared/components/ui/ModuloPanel.vue";
+import SelectMenu from "../../../shared/components/ui/SelectMenu.vue";
+import RangoFechas from "../../../shared/components/ui/RangoFechas.vue";
+import FilaFiltros from "../../../shared/components/ui/FilaFiltros.vue";
+import BotonExportar from "../../../shared/components/ui/BotonExportar.vue";
+import Avatar from "../../../shared/components/ui/Avatar.vue";
 import Cargando from "../../../shared/components/ui/Cargando.vue";
+import Vacio from "../../../shared/components/ui/Vacio.vue";
 import Paginacion from "../../../shared/components/ui/Paginacion.vue";
+import UsuarioModal from "../components/UsuarioModal.vue";
+import PasswordModal from "../components/PasswordModal.vue";
 import { rolesApi, usuariosApi } from "../../shared/catalogos.api.js";
+import { useFiltroColumnas } from "../../../shared/composables/useFiltroColumnas.js";
 import { desde, etiqueta } from "../../../shared/utils/formato.js";
 import { mostrarError, notify } from "../../../shared/composables/useNotify.js";
 
-const f = reactive({ buscar: "", estado: "" });
+const OPC_ESTADO = [
+  { value: "", label: "Todos" },
+  { value: "activo", label: "Activos", dot: "var(--emerald)" },
+  { value: "inactivo", label: "Inactivos", dot: "var(--ink-4)" },
+];
+
+const COLUMNAS = [
+  { key: "nombre", label: "Usuario", filtro: "texto", valorFiltro: (u) => `${u.nombre} ${u.email}` },
+  { key: "roles", label: "Roles", filtro: "texto", valorFiltro: (u) => (u.roles ?? []).map((r) => r.nombre).join(" ") },
+  { key: "cargo", label: "Cargo", filtro: "texto" },
+  { key: "estado", label: "Estado", filtro: "select",
+    opciones: [{ value: "activo", label: "Activo" }, { value: "inactivo", label: "Inactivo" }] },
+  { key: "ultimo_acceso_at", label: "Último acceso" },
+];
+
+const COLUMNAS_EXCEL = [
+  { key: "nombre", label: "Nombre" },
+  { key: "email", label: "Correo" },
+  { key: "roles", label: "Roles", valor: (u) => (u.roles ?? []).map((r) => r.nombre).join(", ") },
+  { key: "cargo", label: "Cargo" },
+  { key: "documento", label: "Documento" },
+  { key: "telefono", label: "Teléfono" },
+  { key: "estado", label: "Estado", valor: (u) => etiqueta(u.estado) },
+  { key: "ultimo_acceso_at", label: "Último acceso", tipo: "fechaHora" },
+];
+
+const f = reactive({ buscar: "", estado: "", rol: "", desde: "", hasta: "" });
 const filas = ref([]);
 const meta = ref(null);
+const roles = ref([]);
 const cargando = ref(true);
+const modal = ref(false);
+const editando = ref(null);
+const passwordDe = ref(null);
+
+const { filtros, filtradas } = useFiltroColumnas(toRef(() => filas.value), COLUMNAS);
+const visibles = filtradas;
+
+const opcRoles = computed(() => [
+  { value: "", label: "Todos los roles" },
+  ...roles.value.map((r) => ({ value: r.codigo, label: r.nombre })),
+]);
+
+const hayFiltros = computed(() => !!(f.buscar || f.estado || f.rol || f.desde || f.hasta));
 
 async function cargar(page = 1) {
   cargando.value = true;
@@ -73,55 +187,57 @@ async function cargar(page = 1) {
   }
 }
 
-async function crear() {
-  const { default: Swal } = await import("sweetalert2");
-  let roles = [];
-  try { roles = (await rolesApi.listar()).data ?? []; } catch { /* se puede crear sin rol */ }
-  const opc = roles.map((r) => `<option value="${r.codigo}">${r.nombre}</option>`).join("");
+async function traerTodo() {
+  const r = await usuariosApi.listar({ ...f, page: 1, pageSize: 100 });
+  return r.data ?? [];
+}
 
-  const r = await Swal.fire({
-    title: "Nuevo usuario",
-    html: `<div style="text-align:left;display:grid;gap:9px">
-        <label class="campo"><span class="campo-label">Nombres</span><input id="n" class="swal2-input input" style="margin:0"></label>
-        <label class="campo"><span class="campo-label">Apellidos</span><input id="a" class="swal2-input input" style="margin:0"></label>
-        <label class="campo"><span class="campo-label">Correo</span><input id="e" type="email" class="swal2-input input" style="margin:0"></label>
-        <label class="campo"><span class="campo-label">Contraseña inicial</span>
-          <input id="p" type="text" class="swal2-input input" style="margin:0" placeholder="mínimo 10 caracteres"></label>
-        <label class="campo"><span class="campo-label">Rol</span>
-          <select id="r" class="swal2-input input" style="margin:0">${opc}</select></label>
-        <label class="campo"><span class="campo-label">Cargo</span><input id="c" class="swal2-input input" style="margin:0"></label>
-      </div>`,
-    width: 440, showCancelButton: true, confirmButtonText: "Crear", cancelButtonText: "Cancelar",
-    buttonsStyling: false, reverseButtons: true,
-    customClass: { popup: "swal-mip", confirmButton: "btn primary", cancelButton: "btn" },
-    preConfirm: () => {
-      const v = (id) => document.getElementById(id).value.trim();
-      if (!v("n") || !v("a") || !v("e")) { Swal.showValidationMessage("Complete nombres, apellidos y correo"); return false; }
-      if (v("p").length < 10) { Swal.showValidationMessage("La contraseña necesita al menos 10 caracteres"); return false; }
-      return { nombres: v("n"), apellidos: v("a"), email: v("e"), password: v("p"), rolCodigos: [v("r")], cargo: v("c") || undefined };
-    },
-  });
-  if (!r.isConfirmed) return;
-  try {
-    await usuariosApi.crear(r.value);
-    await notify.exito("Usuario creado", "Pídale que cambie la contraseña al entrar.");
-    await cargar(1);
-  } catch (e) { await mostrarError(e); }
+function limpiar() {
+  Object.assign(f, { buscar: "", estado: "", rol: "", desde: "", hasta: "" });
+  filtros.value = {};
+  cargar(1);
+}
+
+function abrirAlta() {
+  editando.value = null;
+  modal.value = true;
+}
+function abrirEdicion(u) {
+  editando.value = u;
+  modal.value = true;
+}
+function cerrarModal() {
+  modal.value = false;
+  editando.value = null;
+}
+function alGuardar() {
+  cerrarModal();
+  cargar(meta.value?.page ?? 1);
 }
 
 async function inactivar(u) {
   const motivo = await notify.pedirTexto("Inactivar el usuario", {
     texto: `${u.nombre} dejará de poder entrar, pero su historial se conserva íntegro.`,
-    confirmar: "Inactivar", minimo: 5,
+    confirmar: "Inactivar",
+    minimo: 5,
   });
   if (!motivo) return;
   try {
     const r = await usuariosApi.inactivar(u.id, motivo);
     if (r.data?.alerta) await notify.aviso("Usuario inactivado, con una advertencia", r.data.alerta);
     else await notify.exito("Usuario inactivado");
-    await cargar();
-  } catch (e) { await mostrarError(e); }
+    await cargar(meta.value?.page ?? 1);
+  } catch (e) {
+    await mostrarError(e);
+  }
 }
 
-onMounted(() => cargar(1));
+onMounted(async () => {
+  try {
+    roles.value = (await rolesApi.listar()).data ?? [];
+  } catch {
+    // El filtro de rol puede quedarse vacío sin romper la pantalla.
+  }
+  await cargar(1);
+});
 </script>

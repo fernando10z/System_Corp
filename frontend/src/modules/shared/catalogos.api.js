@@ -21,6 +21,14 @@ export const organizacionApi = {
 
 export const usuariosApi = {
   listar: (p = {}) => apiFetch(`/usuarios${qs(p)}`),
+  /**
+   * Personas a las que se puede asignar trabajo. NO exige `usuarios:listar`:
+   * un coordinador necesita elegir responsable sin poder administrar usuarios.
+   */
+  asignables: (rol) => apiFetch(`/usuarios/asignables${qs({ rol })}`),
+  actualizar: (id, body) => apiFetch(`/usuarios/${id}`, { method: "PATCH", body }),
+  restablecerPassword: (id, passwordNueva) =>
+    apiFetch(`/usuarios/${id}/password`, { method: "POST", body: { passwordNueva } }),
   crear: (body) => apiFetch("/usuarios", { method: "POST", body }),
   inactivar: (id, motivo) => apiFetch(`/usuarios/${id}/inactivar`, { method: "POST", body: { motivo } }),
 };

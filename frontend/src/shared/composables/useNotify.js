@@ -6,11 +6,17 @@ import Swal from "sweetalert2";
  * Prohibido usar window.alert/confirm/prompt nativos o banners ad-hoc en los
  * componentes: rompen la consistencia visual y no respetan el modo oscuro.
  *
+ * Lo que SÍ vive aquí: confirmar, pedir un motivo, elegir entre opciones,
+ * avisar. Lo que NO: formularios de varios campos — esos son modales propios
+ * (shared/components/ui/Modal.vue), porque un formulario incrustado como HTML
+ * en un diálogo no valida bien, no recuerda lo escrito y no se puede probar.
+ *
  * Los textos siguen la regla de escritura del producto: se dice qué pasó y qué
  * hacer, en voz activa, sin disculpas ni vaguedades.
  */
 const base = {
   buttonsStyling: false,
+  reverseButtons: true,
   customClass: {
     popup: "swal-mip",
     confirmButton: "btn primary",
@@ -19,7 +25,8 @@ const base = {
     input: "input",
     validationMessage: "swal-mip-error",
   },
-  reverseButtons: true,
+  showClass: { popup: "swal-mip-anim-in" },
+  hideClass: { popup: "swal-mip-anim-out" },
 };
 
 export const notify = {
@@ -45,22 +52,27 @@ export const notify = {
       showCancelButton: true,
       confirmButtonText: confirmar,
       cancelButtonText: cancelar,
-      customClass: { ...base.customClass, confirmButton: peligro ? "btn peligro" : "btn primary" },
+      customClass: { ...base.customClass, confirmButton: peligro ? "btn solido-peligro" : "btn primary" },
     });
     return r.isConfirmed;
   },
 
   /** Devuelve el texto, o null si se canceló. Valida antes de cerrar. */
-  async pedirTexto(titulo, { texto = "", placeholder = "", confirmar = "Guardar", minimo = 0, area = true } = {}) {
+  async pedirTexto(
+    titulo,
+    { texto = "", placeholder = "", confirmar = "Guardar", minimo = 0, area = true, valorInicial = "" } = {},
+  ) {
     const r = await Swal.fire({
       ...base,
       title: titulo,
       text: texto,
       input: area ? "textarea" : "text",
+      inputValue: valorInicial,
       inputPlaceholder: placeholder,
       showCancelButton: true,
       confirmButtonText: confirmar,
       cancelButtonText: "Cancelar",
+      customClass: { ...base.customClass, input: area ? "textarea" : "input" },
       inputValidator: (v) => {
         const s = (v ?? "").trim();
         if (!s) return "Escriba el motivo para continuar";
@@ -71,12 +83,19 @@ export const notify = {
     return r.isConfirmed ? String(r.value).trim() : null;
   },
 
-  async elegir(titulo, opciones, { confirmar = "Continuar", texto = "" } = {}) {
+  /**
+   * Para tres o cuatro opciones, radios: se ven todas a la vez y se elige de un
+   * clic. Un desplegable esconde las alternativas justo cuando hay que
+   * compararlas.
+   */
+  async elegir(titulo, opciones, { confirmar = "Continuar", texto = "", tipo = "auto" } = {}) {
+    const n = Object.keys(opciones).length;
+    const usarRadio = tipo === "radio" || (tipo === "auto" && n <= 5);
     const r = await Swal.fire({
       ...base,
       title: titulo,
       text: texto,
-      input: "select",
+      input: usarRadio ? "radio" : "select",
       inputOptions: opciones,
       showCancelButton: true,
       confirmButtonText: confirmar,
@@ -96,6 +115,7 @@ export const notify = {
       showConfirmButton: false,
       timer: 2600,
       timerProgressBar: true,
+      customClass: { ...base.customClass, popup: "swal-mip swal-mip--toast" },
     }),
 };
 

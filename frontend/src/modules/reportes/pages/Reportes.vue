@@ -1,136 +1,240 @@
 <template>
   <div>
-    <PageHeader eyebrow="Análisis" title="Indicadores" subtitle="Cada indicador dice cómo se calculó. Los números sin definición engañan.">
+    <PageHeader
+      eyebrow="Análisis"
+      title="Indicadores"
+      subtitle="Cada indicador dice cómo se calculó. Los números sin definición engañan."
+    >
       <template #acciones>
-        <button class="btn" :disabled="!filas.length" @click="exportar"><Download :size="14" /> Exportar CSV</button>
+        <!-- Los filtros mandan sobre toda la pantalla: van con el título. El
+             botón de exportar vive en la tabla, que es lo que se exporta. -->
+        <div class="dash-filtros">
+          <RangoFechas v-model:desde="f.desde" v-model:hasta="f.hasta" placeholder="Elija el periodo" @cambiar="cargar" />
+          <div class="toggle-group">
+            <button v-for="p in PERIODOS" :key="p.d" :class="{ active: periodo === p.d }" @click="aplicarPeriodo(p.d)">
+              {{ p.label }}
+            </button>
+          </div>
+        </div>
       </template>
     </PageHeader>
 
-    <div class="filtros">
-      <input v-model="f.desde" type="date" class="input" @change="cargar" />
-      <input v-model="f.hasta" type="date" class="input" @change="cargar" />
-    </div>
-
-    <Cargando v-if="cargando" />
+    <Cargando v-if="cargando" texto="Calculando los indicadores…" />
 
     <template v-else-if="k">
-      <div class="bandeja" style="margin-bottom: 14px">
-        <section class="bloque">
-          <div class="bloque-head"><span class="bloque-n">{{ k.solicitudes?.creadas ?? 0 }}</span><span class="bloque-label">Solicitudes</span></div>
-          <div class="bloque-lista">
-            <div class="bloque-fila"><span class="crecer">Atendidas</span><b class="mono">{{ k.solicitudes?.atendidas ?? 0 }}</b></div>
-            <div class="bloque-fila"><span class="crecer">Observadas</span><b class="mono">{{ k.solicitudes?.observadas ?? 0 }}</b></div>
-            <div class="bloque-fila">
-              <span class="crecer">Primera revisión</span>
-              <b class="mono">{{ k.solicitudes?.horas_primera_revision_promedio ?? "—" }} h</b>
+      <section class="hero">
+        <div class="hero-cab">
+          <div class="hero-tesis">
+            <div class="eyebrow">Del {{ fecha(f.desde) }} al {{ fecha(f.hasta) }}</div>
+            <h2>
+              Se abrieron <b>{{ k.ot?.total ?? 0 }}</b> órdenes de trabajo
+              y se cerraron <b>{{ k.ot?.cerradas ?? 0 }}</b>.
+            </h2>
+            <p>{{ resumen }}</p>
+          </div>
+
+          <div class="hero-cifras">
+            <div class="hero-cifra"><div class="l">Abiertas</div><div class="v">{{ k.ot?.abiertas ?? 0 }}</div></div>
+            <div class="hero-cifra"><div class="l">Derivadas</div><div class="v">{{ k.ot?.derivadas ?? 0 }}</div></div>
+            <div class="hero-cifra"><div class="l">Reabiertas</div><div class="v">{{ k.ot?.reabiertas ?? 0 }}</div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="kpi-row">
+        <article class="kpi-card" :style="{ '--galon': tasaAlta ? 'var(--red)' : 'var(--emerald)' }">
+          <div class="k-l">Tasa de emergencia</div>
+          <div class="k-v">{{ k.emergencias?.porcentaje ?? 0 }} <small>%</small></div>
+          <div class="k-p">{{ k.emergencias?.cantidad ?? 0 }} emergencia(s) · {{ k.emergencias?.regularizacion_pendiente ?? 0 }} sin regularizar</div>
+          <div class="k-barra"><i :style="{ width: Math.min(100, k.emergencias?.porcentaje ?? 0) + '%' }" /></div>
+        </article>
+
+        <article class="kpi-card" style="--galon: var(--blue)">
+          <div class="k-l">Días de ejecución</div>
+          <div class="k-v">{{ k.duracion?.dias_promedio ?? "—" }} <small>promedio</small></div>
+          <div class="k-p">{{ k.duracion?.casos ?? 0 }} caso(s) medidos · {{ k.duracion?.horas_pausa_promedio ?? 0 }} h de pausa</div>
+        </article>
+
+        <article class="kpi-card" :style="{ '--galon': (k.cierre_con_pendiente?.total ?? 0) ? 'var(--amber)' : 'var(--emerald)' }">
+          <div class="k-l">Cerradas con pendiente</div>
+          <div class="k-v">{{ k.cierre_con_pendiente?.total ?? 0 }}</div>
+          <div class="k-p">{{ k.cierre_con_pendiente?.oc_pendiente ?? 0 }} sin OC · {{ k.cierre_con_pendiente?.liberacion_parcial ?? 0 }} liberación parcial</div>
+        </article>
+
+        <article class="kpi-card" style="--galon: var(--violet)">
+          <div class="k-l">Cotizado en el periodo</div>
+          <div class="k-v mono" style="font-size: 21px">{{ monto(k.costos?.monto_cotizado_total, "PEN") }}</div>
+          <div class="k-p">Suma de cotizaciones vigentes, no costo final</div>
+        </article>
+      </div>
+
+      <div class="dash-grid" style="margin-bottom: var(--gap-paneles)">
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Solicitudes del periodo</h3>
+            <span class="meta">{{ k.solicitudes?.creadas ?? 0 }} creadas</span>
+          </div>
+          <div class="util-bar">
+            <div class="util-bar-row">
+              <span class="label">Atendidas</span>
+              <span class="pct">{{ k.solicitudes?.atendidas ?? 0 }}</span>
+              <div class="track"><div class="fill" :style="{ width: pctSolicitudes(k.solicitudes?.atendidas) + '%' }" /></div>
+            </div>
+            <div class="util-bar-row">
+              <span class="label">Observadas</span>
+              <span class="pct">{{ k.solicitudes?.observadas ?? 0 }}</span>
+              <div class="track">
+                <div class="fill" :style="{ width: pctSolicitudes(k.solicitudes?.observadas) + '%', background: 'var(--amber)' }" />
+              </div>
+            </div>
+          </div>
+          <div class="timeline-row" style="border: 0; padding: 0">
+            <span class="when">1.ª rev.</span>
+            <div class="what">
+              <strong>{{ k.solicitudes?.horas_primera_revision_promedio ?? "—" }} h de media</strong>
+              <small>Desde que se envía hasta que alguien la toma</small>
             </div>
           </div>
         </section>
 
-        <section class="bloque">
-          <div class="bloque-head"><span class="bloque-n">{{ k.ot?.total ?? 0 }}</span><span class="bloque-label">Órdenes de trabajo</span></div>
-          <div class="bloque-lista">
-            <div class="bloque-fila"><span class="crecer">Abiertas</span><b class="mono">{{ k.ot?.abiertas ?? 0 }}</b></div>
-            <div class="bloque-fila"><span class="crecer">Cerradas</span><b class="mono">{{ k.ot?.cerradas ?? 0 }}</b></div>
-            <div class="bloque-fila"><span class="crecer">Derivadas</span><b class="mono">{{ k.ot?.derivadas ?? 0 }}</b></div>
-            <div class="bloque-fila"><span class="crecer">Reabiertas</span><b class="mono">{{ k.ot?.reabiertas ?? 0 }}</b></div>
-          </div>
-        </section>
-
-        <section class="bloque" :class="k.emergencias?.cantidad ? 'urgente' : ''">
-          <div class="bloque-head">
-            <span class="bloque-n">{{ k.emergencias?.porcentaje ?? 0 }}%</span>
-            <span class="bloque-label">Tasa de emergencia</span>
-          </div>
-          <div class="bloque-lista">
-            <div class="bloque-fila"><span class="crecer">Emergencias</span><b class="mono">{{ k.emergencias?.cantidad ?? 0 }}</b></div>
-            <div class="bloque-fila">
-              <span class="crecer">Regularización pendiente</span>
-              <b class="mono">{{ k.emergencias?.regularizacion_pendiente ?? 0 }}</b>
-            </div>
-          </div>
-        </section>
-
-        <section class="bloque">
-          <div class="bloque-head">
-            <span class="bloque-n">{{ k.duracion?.dias_promedio ?? "—" }}</span>
-            <span class="bloque-label">Días de ejecución</span>
-            <span class="bloque-accion">promedio</span>
-          </div>
-          <div class="bloque-lista">
-            <div class="bloque-fila"><span class="crecer">Casos medidos</span><b class="mono">{{ k.duracion?.casos ?? 0 }}</b></div>
-            <!-- Las pausas se reportan aparte, no se descuentan del total. -->
-            <div class="bloque-fila"><span class="crecer">Horas en pausa</span><b class="mono">{{ k.duracion?.horas_pausa_promedio ?? 0 }}</b></div>
-          </div>
-        </section>
-
-        <section class="bloque">
-          <div class="bloque-head">
-            <span class="bloque-n">{{ k.cierre_con_pendiente?.total ?? 0 }}</span>
-            <span class="bloque-label">Cerradas con pendiente</span>
-          </div>
-          <div class="bloque-lista">
-            <div class="bloque-fila"><span class="crecer">OC pendiente</span><b class="mono">{{ k.cierre_con_pendiente?.oc_pendiente ?? 0 }}</b></div>
-            <div class="bloque-fila"><span class="crecer">Liberación parcial</span><b class="mono">{{ k.cierre_con_pendiente?.liberacion_parcial ?? 0 }}</b></div>
-          </div>
-          <div class="bloque-vacio" style="border-top: 1px solid var(--line-soft)">
-            {{ k.cierre_con_pendiente?.nota }}
-          </div>
-        </section>
-
-        <section class="bloque">
-          <div class="bloque-head">
-            <span class="bloque-n" style="font-size: 20px">
-              {{ monto(k.costos?.monto_cotizado_total, "PEN") }}
-            </span>
-            <span class="bloque-label">Cotizado</span>
-          </div>
-          <div class="bloque-vacio">{{ k.costos?.advertencia }}</div>
+        <section class="panel">
+          <div class="panel-head"><h3>Cómo se calculó</h3></div>
+          <ul class="notas">
+            <li v-if="k.cierre_con_pendiente?.nota"><Info :size="13" />{{ k.cierre_con_pendiente.nota }}</li>
+            <li v-if="k.costos?.advertencia"><Info :size="13" />{{ k.costos.advertencia }}</li>
+            <li><Info :size="13" />La duración se cuenta en días calendario; las pausas se reportan aparte y no se descuentan.</li>
+            <li><Info :size="13" />La tasa de emergencia mide clasificaciones, no incumplimientos técnicos.</li>
+          </ul>
         </section>
       </div>
 
-      <div class="tbl-shell">
-        <div class="card-head"><span class="card-titulo">Detalle de OT del periodo</span></div>
-        <div class="tbl-scroll" style="max-height: 460px">
-          <table class="stbl">
+      <ModuloPanel titulo="Detalle de OT del periodo" :icono="ClipboardList" :conteo="visibles.length" a-sangre>
+        <template #acciones>
+          <BotonExportar nombre="indicadores-ot" :columnas="COLUMNAS_EXCEL" :filas="visibles" />
+        </template>
+
+        <div v-if="filas.length" class="tabla-wrap" style="max-height: 520px">
+          <table>
             <thead>
-              <tr><th>OT</th><th>Estado</th><th>Título</th><th>Área</th><th>Tipo</th><th class="der">Días</th><th class="der">Cotizado</th></tr>
+              <tr>
+                <th v-for="c in COLUMNAS" :key="c.key" :class="c.align === 'right' ? 'num' : ''">{{ c.label }}</th>
+              </tr>
+              <FilaFiltros :columnas="COLUMNAS" v-model="filtros" />
             </thead>
             <tbody>
-              <tr v-for="r in filas" :key="r.numero_ot">
-                <td class="mono">{{ r.numero_ot }}</td>
+              <tr v-for="r in visibles" :key="r.numero_ot">
+                <td class="mono" style="font-weight: 600; color: var(--ink)">{{ r.numero_ot }}</td>
                 <td><EstadoOt :estado="r.estado" :admin="r.estado_administrativo" /></td>
-                <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ r.titulo }}</td>
+                <td class="truncar" style="max-width: 280px">{{ r.titulo }}</td>
                 <td class="muted">{{ r.area ?? "—" }}</td>
                 <td class="muted">{{ r.tipo_trabajo ?? "—" }}</td>
-                <td class="der mono">{{ r.duracion_dias ?? "—" }}</td>
-                <td class="der mono">{{ r.monto_cotizado ? monto(r.monto_cotizado, r.moneda) : "—" }}</td>
+                <td class="num mono">{{ r.duracion_dias ?? "—" }}</td>
+                <td class="num mono">{{ r.monto_cotizado ? monto(r.monto_cotizado, r.moneda) : "—" }}</td>
               </tr>
             </tbody>
           </table>
+
+          <div v-if="!visibles.length" class="vacio" style="padding: 40px 20px">
+            <div class="vacio-titulo">Ninguna fila pasa los filtros de columna</div>
+            <button class="btn" @click="filtros = {}">Quitar filtros de columna</button>
+          </div>
         </div>
-      </div>
+
+        <Vacio
+          v-else
+          :icono="ClipboardList"
+          titulo="Ninguna OT en este periodo"
+          texto="Amplíe el rango de fechas para ver movimiento."
+        />
+      </ModuloPanel>
     </template>
   </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
-import { Download } from "lucide-vue-next";
+import { computed, onMounted, reactive, ref, toRef } from "vue";
+import { ClipboardList, Info } from "lucide-vue-next";
 import PageHeader from "../../../layouts/PageHeader.vue";
+import ModuloPanel from "../../../shared/components/ui/ModuloPanel.vue";
+import RangoFechas from "../../../shared/components/ui/RangoFechas.vue";
+import FilaFiltros from "../../../shared/components/ui/FilaFiltros.vue";
+import BotonExportar from "../../../shared/components/ui/BotonExportar.vue";
 import Cargando from "../../../shared/components/ui/Cargando.vue";
+import Vacio from "../../../shared/components/ui/Vacio.vue";
 import EstadoOt from "../../../shared/components/ui/EstadoOt.vue";
 import { dashboardApi, reportesApi } from "../../shared/catalogos.api.js";
-import { monto } from "../../../shared/utils/formato.js";
-import { mostrarError, notify } from "../../../shared/composables/useNotify.js";
+import { useFiltroColumnas } from "../../../shared/composables/useFiltroColumnas.js";
+import { etiqueta, fecha, monto } from "../../../shared/utils/formato.js";
+import { mostrarError } from "../../../shared/composables/useNotify.js";
 
-const hoy = new Date().toISOString().slice(0, 10);
-const hace90 = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+const PERIODOS = [
+  { d: 30, label: "30 d" },
+  { d: 90, label: "90 d" },
+  { d: 365, label: "1 año" },
+];
 
-const f = reactive({ desde: hace90, hasta: hoy });
+const COLUMNAS = [
+  { key: "numero_ot", label: "OT", filtro: "texto" },
+  { key: "estado", label: "Estado", filtro: "texto", valorFiltro: (r) => etiqueta(r.estado) },
+  { key: "titulo", label: "Título", filtro: "texto" },
+  { key: "area", label: "Área", filtro: "texto" },
+  { key: "tipo_trabajo", label: "Tipo", filtro: "texto" },
+  { key: "duracion_dias", label: "Días", align: "right", filtro: "numero", placeholder: "≥" },
+  { key: "monto_cotizado", label: "Cotizado", align: "right", filtro: "limpiar" },
+];
+
+const COLUMNAS_EXCEL = [
+  { key: "numero_ot", label: "OT" },
+  { key: "estado", label: "Estado", valor: (r) => etiqueta(r.estado) },
+  { key: "estado_administrativo", label: "Estado administrativo", valor: (r) => etiqueta(r.estado_administrativo) },
+  { key: "titulo", label: "Título" },
+  { key: "area", label: "Área" },
+  { key: "tipo_trabajo", label: "Tipo de trabajo" },
+  { key: "duracion_dias", label: "Días de ejecución", tipo: "entero" },
+  { key: "monto_cotizado", label: "Cotizado", tipo: "numero" },
+  { key: "moneda", label: "Moneda" },
+];
+
+const iso = (d) => new Date(d).toISOString().slice(0, 10);
+const hoy = iso(Date.now());
+
+const f = reactive({ desde: iso(Date.now() - 90 * 86400000), hasta: hoy });
+const periodo = ref(90);
 const k = ref(null);
 const filas = ref([]);
 const cargando = ref(true);
+
+const { filtros, filtradas } = useFiltroColumnas(toRef(() => filas.value), COLUMNAS);
+const visibles = filtradas;
+
+const tasaAlta = computed(() => (k.value?.emergencias?.porcentaje ?? 0) > 20);
+
+const resumen = computed(() => {
+  const x = k.value;
+  if (!x) return "";
+  const partes = [];
+  if (x.emergencias?.regularizacion_pendiente)
+    partes.push(`${x.emergencias.regularizacion_pendiente} emergencia(s) siguen sin regularizar`);
+  if (x.cierre_con_pendiente?.total)
+    partes.push(`${x.cierre_con_pendiente.total} se cerraron con pendiente administrativo`);
+  if (x.ot?.reabiertas) partes.push(`${x.ot.reabiertas} se reabrieron`);
+  return partes.length
+    ? `${partes.join(", ")}. Cada cifra dice abajo cómo se calculó.`
+    : "Sin emergencias sin regularizar ni cierres con pendiente en el periodo.";
+});
+
+function aplicarPeriodo(d) {
+  periodo.value = d;
+  f.desde = iso(Date.now() - d * 86400000);
+  f.hasta = hoy;
+  cargar();
+}
+
+function pctSolicitudes(n) {
+  const total = k.value?.solicitudes?.creadas ?? 0;
+  if (!total) return 0;
+  return Math.round((Number(n ?? 0) / total) * 100);
+}
 
 async function cargar() {
   cargando.value = true;
@@ -145,20 +249,14 @@ async function cargar() {
   }
 }
 
-/** Exporta lo que hay en pantalla, con las mismas columnas que se ven. */
-function exportar() {
-  const cols = Object.keys(filas.value[0] ?? {});
-  const escapa = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const csv = [cols.join(","), ...filas.value.map((r) => cols.map((c) => escapa(r[c])).join(","))].join("\n");
-  // BOM para que Excel en español respete los acentos.
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `mip-ot-${f.desde}-a-${f.hasta}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  notify.toast("Archivo descargado");
-}
-
 onMounted(cargar);
 </script>
+
+<style scoped>
+.notas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.notas li {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 12.5px; color: var(--ink-3); line-height: 1.5;
+}
+.notas li svg { flex: none; margin-top: 3px; color: var(--ink-4); }
+</style>

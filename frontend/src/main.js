@@ -3,6 +3,7 @@ import App from "./App.vue";
 import router from "./router/index.js";
 import { initThemeEarly } from "./shared/composables/useTheme.js";
 import "sweetalert2/dist/sweetalert2.min.css";
+import "./styles/fuentes.css";
 import "./styles/globals.css";
 import "./styles/dialogos.css";
 

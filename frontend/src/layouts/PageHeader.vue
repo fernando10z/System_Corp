@@ -1,11 +1,11 @@
 <template>
   <header class="page-head">
-    <div>
-      <div v-if="eyebrow" class="page-eyebrow">{{ eyebrow }}</div>
-      <h1 class="page-title">{{ title }}</h1>
-      <p v-if="subtitle" class="page-sub">{{ subtitle }}</p>
+    <div class="titles">
+      <div v-if="eyebrow" class="eyebrow">{{ eyebrow }}</div>
+      <h1>{{ title }}</h1>
+      <p v-if="subtitle" class="subtitle">{{ subtitle }}</p>
     </div>
-    <div v-if="$slots.acciones" class="page-acciones"><slot name="acciones" /></div>
+    <div v-if="$slots.acciones" class="actions"><slot name="acciones" /></div>
   </header>
 </template>
 

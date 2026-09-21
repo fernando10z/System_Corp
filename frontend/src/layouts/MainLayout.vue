@@ -17,5 +17,10 @@ const { plegada } = useSidebar();
 </script>
 
 <style scoped>
-/* El armazón vive en globals.css: .sidebar es fixed y .main lleva el margen. */
+/* El armazón vive en globals.css:
+   - .app es un grid de dos columnas (sidebar + contenido); el sidebar es un
+     HERMANO del contenido, no una capa flotante encima con margin-left.
+   - .sidebar es sticky a 100vh, así que el pie con el usuario nunca se va con
+     el scroll.
+   - .page centra la columna de trabajo en --ancho-contenido. */
 </style>

@@ -9,60 +9,66 @@
 
     Cada sello es un hecho de la bitácora append-only. El motivo se resalta
     porque es lo que el documento exige conservar en toda acción sensible, y es
-    lo primero que alguien busca meses después cuando pregunta "¿por qué se
-    hizo así?".
+    lo primero que alguien busca meses después preguntando "¿por qué se hizo
+    así?".
   -->
-  <div>
-    <div class="fila fila-sep" style="margin-bottom: 14px">
-      <div class="fila" style="gap: 14px">
-        <span class="muted" style="font-size: 12px">
-          {{ eventos.length }} {{ eventos.length === 1 ? "hecho registrado" : "hechos registrados" }}
-        </span>
-        <label class="fila" style="gap: 6px; font-size: 12px; cursor: pointer">
-          <input type="checkbox" v-model="soloHitos" />
-          Sólo hitos
-        </label>
-      </div>
-      <span v-if="meta" class="mono muted" style="font-size: 11px">
-        v{{ meta.version }} · {{ meta.total_nodos }} nodo(s) · profundidad {{ meta.profundidad_arbol }}
+  <section class="card">
+    <header class="card-head">
+      <span class="card-titulo">
+        <span class="icon-tile"><Stamp :size="14" /></span>
+        Tarjeta viajera
+        <span class="head-meta">{{ eventos.length }}</span>
       </span>
-    </div>
-
-    <div v-if="!visibles.length" class="vacio">
-      <div class="vacio-titulo">Todavía no hay sellos</div>
-      <p class="vacio-texto">
-        En cuanto la OT avance, cada acción quedará registrada aquí con su autor, su instante y su motivo.
-      </p>
-    </div>
-
-    <div v-else class="viajera">
-      <article v-for="e in visibles" :key="e.id" class="sello" :class="claseSello(e.evento)">
-        <div class="sello-cab">
-          <span class="sello-titulo">{{ nombreEvento(e.evento) }}</span>
-          <span class="sello-meta">{{ fechaHora(e.fecha) }}</span>
-          <span v-if="e.actor" class="sello-meta">· {{ e.actor }}</span>
+      <div class="fila" style="gap: 12px">
+        <div class="toggle-group">
+          <button :class="{ active: !soloHitos }" @click="soloHitos = false">Todo</button>
+          <button :class="{ active: soloHitos }" @click="soloHitos = true">Sólo hitos</button>
         </div>
+        <span v-if="meta" class="mono muted" style="font-size: 11px">
+          v{{ meta.version }} · {{ meta.total_nodos }} nodo(s) · prof. {{ meta.profundidad_arbol }}
+        </span>
+      </div>
+    </header>
 
-        <!-- Antes → después, en mono para poder compararlos de un vistazo. -->
-        <div v-if="cambio(e)" class="sello-cambio">
-          <span class="antes">{{ cambio(e).antes }}</span>
-          <span class="flecha">→</span>
-          <span class="despues">{{ cambio(e).despues }}</span>
-        </div>
+    <div class="card-cuerpo">
+      <Vacio
+        v-if="!visibles.length"
+        :icono="Stamp"
+        titulo="Todavía no hay sellos"
+        texto="En cuanto la OT avance, cada acción quedará registrada aquí con su autor, su instante y su motivo."
+      />
 
-        <div v-else-if="resumen(e)" class="sello-cuerpo">{{ resumen(e) }}</div>
+      <div v-else class="viajera">
+        <article v-for="e in visibles" :key="e.id" class="sello" :class="claseSello(e.evento)">
+          <div class="sello-cab">
+            <span class="sello-titulo">{{ nombreEvento(e.evento) }}</span>
+            <span class="sello-meta">{{ fechaHora(e.fecha) }}</span>
+            <span v-if="e.actor" class="sello-meta">· {{ e.actor }}</span>
+          </div>
 
-        <div v-if="e.motivo" class="sello-motivo">
-          <b>Motivo</b>
-          {{ e.motivo }}
-        </div>
-      </article>
+          <!-- Antes → después, en mono para compararlos de un vistazo. -->
+          <div v-if="cambio(e)" class="sello-cambio">
+            <span class="antes">{{ cambio(e).antes }}</span>
+            <span class="flecha">→</span>
+            <span class="despues">{{ cambio(e).despues }}</span>
+          </div>
+
+          <div v-else-if="resumen(e)" class="sello-cuerpo">{{ resumen(e) }}</div>
+
+          <div v-if="e.motivo" class="sello-motivo">
+            <b>Motivo</b>
+            {{ e.motivo }}
+          </div>
+        </article>
+      </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
 import { computed, ref } from "vue";
+import { Stamp } from "lucide-vue-next";
+import Vacio from "./Vacio.vue";
 import { claseSello, etiqueta, fechaHora, nombreEvento } from "../../utils/formato.js";
 
 const props = defineProps({

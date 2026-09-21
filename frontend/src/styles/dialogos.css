@@ -2,43 +2,133 @@
    SweetAlert2 vestido con los tokens de MIP.
    Sin esto los diálogos ignoran el modo oscuro y rompen la coherencia visual,
    que es justamente el motivo por el que useNotify es el único canal permitido.
+
+   Los formularios de varios campos NO viven aquí: son modales propios
+   (shared/components/ui/Modal.vue). SweetAlert se reserva para lo que de verdad
+   es un diálogo: confirmar, pedir un motivo, elegir una opción, avisar.
    ========================================================================== */
 .swal2-container { z-index: 9999; }
+
+/* Sólo los diálogos modales oscurecen la pantalla. OJO: SweetAlert pone la
+   clase swal2-toast-shown en <body>, no en el contenedor — por eso se acota
+   con body:not(...) y no con el contenedor. */
+body:not(.swal2-toast-shown) .swal2-container.swal2-backdrop-show {
+  background: rgba(11, 20, 20, 0.45) !important;
+  backdrop-filter: blur(3px);
+}
+body.swal2-toast-shown .swal2-container {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  pointer-events: none;
+}
+body.swal2-toast-shown .swal2-container .swal2-toast { pointer-events: auto; }
 
 .swal-mip {
   background: var(--bg-elev) !important;
   color: var(--ink) !important;
   border: 1px solid var(--line);
-  border-radius: var(--radio-lg) !important;
-  box-shadow: var(--sombra-pop) !important;
-  font-family: var(--fuente) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-pop) !important;
+  font-family: var(--font) !important;
+  padding: 26px 28px 22px !important;
+  min-width: 380px;
 }
+
 .swal-mip .swal2-title {
-  font-family: var(--fuente-titulo) !important;
+  font-family: var(--font) !important;
   font-size: 17px !important;
   font-weight: 600 !important;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   color: var(--ink) !important;
+  padding: 0 0 6px !important;
+  margin: 0 !important;
 }
-.swal-mip .swal2-html-container { color: var(--ink-2) !important; font-size: 13.5px !important; }
-.swal-mip .swal2-actions { gap: 8px; }
+
+.swal-mip .swal2-html-container {
+  color: var(--ink-3) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  margin: 4px 0 6px !important;
+}
+
+.swal-mip .swal2-icon { margin: 6px auto 14px !important; border-color: var(--line) !important; }
+/* Sólo se tiñe el anillo del success: el resto respeta el render nativo. */
+.swal-mip .swal2-icon.swal2-success .swal2-success-ring { border-color: var(--emerald-line) !important; }
+.swal-mip .swal2-icon.swal2-success [class^="swal2-success-line"] { background-color: var(--emerald) !important; }
+.swal-mip .swal2-icon.swal2-success [class^="swal2-success-circular-line"],
+.swal-mip .swal2-icon.swal2-success .swal2-success-fix { background-color: var(--bg-elev) !important; }
+
+.swal-mip .swal2-actions {
+  display: flex !important;
+  gap: 8px !important;
+  margin-top: 18px !important;
+  justify-content: flex-end !important;
+  width: 100%;
+}
+
 .swal-mip .swal2-input,
 .swal-mip .swal2-textarea,
 .swal-mip .swal2-select {
   background: var(--bg-elev) !important;
   color: var(--ink) !important;
   border: 1px solid var(--line) !important;
-  border-radius: var(--radio-sm) !important;
-  font-family: var(--fuente) !important;
+  border-radius: 8px !important;
+  font-family: var(--font) !important;
   font-size: 13px !important;
+  padding: 9px 11px !important;
   box-shadow: none !important;
+  transition: border-color 0.12s, box-shadow 0.12s;
 }
-.swal-mip .swal2-textarea { min-height: 92px; }
+.swal-mip .swal2-input:focus,
+.swal-mip .swal2-textarea:focus,
+.swal-mip .swal2-select:focus {
+  border-color: var(--emerald) !important;
+  box-shadow: 0 0 0 3px var(--emerald-soft) !important;
+  outline: none !important;
+}
+.swal-mip .swal2-textarea { min-height: 96px; line-height: 1.55; }
+
 .swal-mip-error,
 .swal-mip .swal2-validation-message {
-  background: var(--rojo-piel) !important;
-  color: var(--rojo) !important;
-  border-radius: var(--radio-sm);
+  background: var(--red-soft) !important;
+  color: var(--red-ink) !important;
+  border-radius: 8px;
   font-size: 12px !important;
+  font-weight: 500;
 }
-.swal-mip .swal2-icon { border-color: var(--line) !important; }
+.swal-mip .swal2-validation-message::before { display: none; }
+
+.swal-mip .swal2-radio {
+  background: transparent !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  align-items: stretch !important;
+}
+.swal-mip .swal2-radio label {
+  background: var(--bg-soft) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  font-size: 13px !important;
+  color: var(--ink-2) !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+}
+.swal-mip .swal2-radio label:hover { border-color: var(--emerald-line) !important; background: var(--emerald-soft) !important; }
+.swal-mip .swal2-radio input[type="radio"] { accent-color: var(--emerald); }
+
+/* Toast: sin sombra, sólo el borde fino lo delimita. */
+.swal-mip--toast {
+  padding: 14px 18px !important;
+  min-width: 280px !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.swal-mip--toast .swal2-title { font-size: 13px !important; padding: 0 !important; }
+.swal-mip--toast .swal2-icon { width: 24px !important; height: 24px !important; margin: 0 10px 0 0 !important; }
+
+@keyframes mip-sweet-in { from { opacity: 0; transform: translateY(-8px) scale(0.97); } }
+@keyframes mip-sweet-out { to { opacity: 0; transform: scale(0.97); } }
+.swal-mip-anim-in { animation: mip-sweet-in 200ms cubic-bezier(0.22, 1, 0.36, 1); }
+.swal-mip-anim-out { animation: mip-sweet-out 150ms ease; }

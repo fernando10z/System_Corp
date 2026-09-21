@@ -4,86 +4,121 @@
 
     <template v-else-if="t">
       <!-- ── cabecera ─────────────────────────────────────────────────── -->
-      <header class="ficha-head">
-        <div>
-          <div class="fila" style="gap: 10px; margin-bottom: 5px">
-            <router-link to="/ot" class="btn icono sm plano" title="Volver al listado">
-              <ArrowLeft :size="14" />
-            </router-link>
-            <span class="page-eyebrow" style="margin: 0">
-              {{ t.ot.es_derivada ? `Derivada de ${t.origen?.ot_padre?.numero ?? "—"}` : "Orden de trabajo" }}
-            </span>
+      <header class="ficha-head" :style="{ '--galon': galonEstado(t.ot.estado) }">
+        <div class="ficha-top">
+          <div class="ficha-id">
+            <div class="fila" style="gap: 10px; margin-bottom: 8px">
+              <router-link to="/ot" class="row-action" title="Volver al listado"><ArrowLeft :size="15" /></router-link>
+              <span class="eyebrow">
+                {{ t.ot.es_derivada ? `Derivada de ${t.origen?.ot_padre?.numero ?? "—"}` : "Orden de trabajo" }}
+              </span>
+            </div>
+
+            <div class="ficha-numero">{{ t.ot.numero }}</div>
+            <p v-if="titulo" class="ficha-titulo">{{ titulo }}</p>
+
+            <div class="ficha-marcas">
+              <EstadoOt :estado="t.ot.estado" :admin="t.ot.estado_administrativo" />
+              <span v-if="t.ot.es_emergencia" class="tag emergencia"><Siren :size="11" /> Emergencia</span>
+              <span v-if="t.ot.condicion === 'pausada'" class="tag pausada"><Pause :size="11" /> Pausada</span>
+              <span v-if="t.ot.veces_reabierta" class="tag">Reabierta ×{{ t.ot.veces_reabierta }}</span>
+              <span v-if="t.ot.emergencia?.regularizacion_pendiente" class="tag espera">Regularización pendiente</span>
+            </div>
           </div>
 
-          <div class="fila" style="gap: 12px; flex-wrap: wrap">
-            <h1 class="page-title mono" style="font-size: 26px">{{ t.ot.numero }}</h1>
-            <EstadoOt :estado="t.ot.estado" :admin="t.ot.estado_administrativo" />
-            <span v-if="t.ot.es_emergencia" class="tag emergencia">Emergencia</span>
-            <span v-if="t.ot.condicion === 'pausada'" class="tag pausada">Pausada</span>
-            <span v-if="t.ot.veces_reabierta" class="tag">Reabierta ×{{ t.ot.veces_reabierta }}</span>
-            <span v-if="t.ot.emergencia?.regularizacion_pendiente" class="tag espera">Regularización pendiente</span>
+          <div class="ficha-cifras">
+            <div class="qs">
+              <div class="ql">Prioridad</div>
+              <div class="qv" :class="{ peligro: t.ot.prioridad_tecnica === 'critica', espera: t.ot.prioridad_tecnica === 'alta' }">
+                {{ etiqueta(t.ot.prioridad_tecnica) }}
+              </div>
+            </div>
+            <div class="qs">
+              <div class="ql">Cotizado</div>
+              <div class="qv mono">{{ cotizacionVigente ? monto(cotizacionVigente.monto, cotizacionVigente.moneda) : "—" }}</div>
+            </div>
+            <div class="qs">
+              <div class="ql">Abierta</div>
+              <div class="qv">{{ t.ejecucion?.duracion_dias ? dias(t.ejecucion.duracion_dias) : desde(t.ot.fechas?.creacion) }}</div>
+            </div>
+            <div v-if="(t.derivadas ?? []).length" class="qs">
+              <div class="ql">Derivadas</div>
+              <div class="qv" :class="{ peligro: bloqueantes }">
+                {{ t.derivadas.length }}<span v-if="bloqueantes" style="font-size: 12px"> · {{ bloqueantes }} bloquea(n)</span>
+              </div>
+            </div>
           </div>
-
-          <p class="page-sub" style="margin-top: 6px">{{ titulo }}</p>
-        </div>
-
-        <!--
-          Las acciones que se ofrecen dependen del ESTADO, no del rol: mostrar
-          "Cerrar" en una OT en diagnóstico sería ofrecer algo imposible. El rol
-          filtra después, y el SP decide de verdad.
-        -->
-        <div class="page-acciones" style="flex-wrap: wrap; justify-content: flex-end">
-          <button v-if="p.diagnosticar" class="btn" @click="irA('diagnosticos')">
-            <Stethoscope :size="14" /> Diagnosticar
-          </button>
-          <button v-if="p.cotizar" class="btn" @click="irA('cotizacion')">
-            <FileText :size="14" /> Cargar cotización
-          </button>
-          <button v-if="p.iniciar" class="btn accion" @click="iniciar">
-            <Play :size="14" /> Iniciar trabajo
-          </button>
-          <button v-if="p.avanzar" class="btn" @click="registrarAvance">
-            <Plus :size="14" /> Avance
-          </button>
-          <button v-if="p.pausar" class="btn" @click="pausar"><Pause :size="14" /> Pausar</button>
-          <button v-if="p.reanudar" class="btn accion" @click="reanudar"><Play :size="14" /> Reanudar</button>
-          <button v-if="p.declarar" class="btn accion" @click="declarar">
-            <CheckCheck :size="14" /> Declarar trabajo realizado
-          </button>
-          <button v-if="p.revisar" class="btn accion" @click="revisar">
-            <ClipboardCheck :size="14" /> Revisar trabajo
-          </button>
-          <button v-if="p.cerrar" class="btn primary" @click="cerrar"><Lock :size="14" /> Cerrar</button>
-          <button v-if="p.reabrir" class="btn" @click="reabrir"><Unlock :size="14" /> Reabrir</button>
-          <button v-if="p.derivar" class="btn" @click="derivar"><GitBranch :size="14" /> Crear derivada</button>
-          <button v-if="p.cancelar" class="btn peligro" @click="cancelar"><Ban :size="14" /> Cancelar</button>
         </div>
       </header>
 
+      <!--
+        Qué espera la OT ahora mismo. Es la pregunta que se hace cualquiera al
+        abrir la ficha, y hasta ahora había que deducirla del estado más las
+        pestañas. Decirla en una línea ahorra ese trabajo.
+      -->
+      <div v-if="siguientePaso" class="aviso" :class="siguientePaso.tono" style="margin-bottom: var(--gap-paneles)">
+        <component :is="siguientePaso.icono" :size="15" />
+        <div><b>{{ siguientePaso.titulo }}</b>{{ siguientePaso.texto }}</div>
+      </div>
+
+      <!--
+        Las acciones dependen del ESTADO, no del rol: mostrar "Cerrar" en una OT
+        en diagnóstico sería ofrecer algo imposible. El rol filtra después, y el
+        stored procedure decide de verdad.
+      -->
+      <div v-if="hayAcciones" class="ficha-acciones">
+        <button v-if="p.diagnosticar" class="btn" @click="tab = 'diagnosticos'"><Stethoscope :size="14" /> Diagnosticar</button>
+        <button v-if="p.cotizar" class="btn" @click="tab = 'cotizacion'"><FileText :size="14" /> Cotización</button>
+        <button v-if="p.iniciar" class="btn accion" @click="iniciar"><Play :size="14" /> Iniciar trabajo</button>
+        <button v-if="p.avanzar" class="btn" @click="registrarAvance"><Plus :size="14" /> Avance</button>
+        <button v-if="p.pausar" class="btn" @click="pausar"><Pause :size="14" /> Pausar</button>
+        <button v-if="p.reanudar" class="btn accion" @click="reanudar"><Play :size="14" /> Reanudar</button>
+        <button v-if="p.declarar" class="btn accion" @click="declarar"><CheckCheck :size="14" /> Declarar realizado</button>
+        <button v-if="p.revisar" class="btn accion" @click="revisar"><ClipboardCheck :size="14" /> Revisar trabajo</button>
+        <button v-if="p.cerrar" class="btn primary" @click="cerrar"><Lock :size="14" /> Cerrar</button>
+
+        <span class="crecer" />
+
+        <button v-if="p.derivar" class="btn plano" @click="derivar"><GitBranch :size="14" /> Derivar</button>
+        <button v-if="p.reabrir" class="btn plano" @click="reabrir"><Unlock :size="14" /> Reabrir</button>
+        <button v-if="p.cancelar" class="btn peligro" @click="cancelar"><Ban :size="14" /> Cancelar</button>
+      </div>
+
+      <!-- La emergencia se explica siempre: es una excepción que exige justificarse. -->
+      <div v-if="t.ot.emergencia" class="card" style="margin-bottom: var(--gap-paneles)">
+        <div class="card-cuerpo">
+          <div class="sello-motivo peligro" style="margin: 0">
+            <b>Clasificada como emergencia</b>
+            {{ t.ot.emergencia.justificacion }}
+            <div class="mas-muted mono" style="font-size: 10.5px; margin-top: 5px">
+              {{ t.ot.emergencia.declarada_por }} · {{ fechaHora(t.ot.emergencia.declarada_at) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── datos de un vistazo ──────────────────────────────────────── -->
-      <div class="card" style="margin-bottom: 16px">
+      <section class="card" style="margin-bottom: var(--gap-paneles)">
+        <div class="card-head">
+          <span class="card-titulo">
+            <span class="icon-tile neutral"><Info :size="14" /></span>
+            Datos de la intervención
+          </span>
+          <button v-if="p.prioridad" class="btn sm" @click="cambiarPrioridad">Cambiar prioridad</button>
+        </div>
         <div class="card-cuerpo defs">
           <div><div class="def-k">Sucursal</div><div class="def-v">{{ t.organizacion?.sucursal?.nombre ?? "—" }}</div></div>
           <div v-if="t.organizacion?.empresa_ruc">
             <div class="def-k">Empresa / RUC</div>
             <div class="def-v">
               {{ t.organizacion.empresa_ruc.razon_social }}
-              <span class="mono muted">{{ t.organizacion.empresa_ruc.ruc }}</span>
+              <div class="mono mas-muted" style="font-size: 11.5px">{{ t.organizacion.empresa_ruc.ruc }}</div>
             </div>
           </div>
           <div><div class="def-k">Área</div><div class="def-v">{{ t.organizacion?.area?.nombre ?? "—" }}</div></div>
-          <div>
-            <div class="def-k">Prioridad técnica</div>
-            <div class="def-v">
-              <span class="prio" :class="'p-' + t.ot.prioridad_tecnica">{{ etiqueta(t.ot.prioridad_tecnica) }}</span>
-              <button v-if="p.prioridad" class="btn sm plano" style="margin-left: 4px" @click="cambiarPrioridad">
-                Cambiar
-              </button>
-            </div>
-          </div>
           <div><div class="def-k">Tipo de trabajo</div><div class="def-v">{{ t.ot.tipo_trabajo ?? "—" }}</div></div>
           <div><div class="def-k">Coordinador</div><div class="def-v">{{ t.ot.coordinador ?? "—" }}</div></div>
-          <div><div class="def-k">Ejecutor</div><div class="def-v">{{ t.ot.ejecutor ?? "—" }}</div></div>
+          <div><div class="def-k">Ejecutor</div><div class="def-v">{{ t.ot.ejecutor ?? "Sin asignar" }}</div></div>
           <div><div class="def-k">Creada</div><div class="def-v mono">{{ fecha(t.ot.fechas?.creacion) }}</div></div>
           <div v-if="t.ot.fechas?.inicio_real">
             <div class="def-k">Inicio real</div><div class="def-v mono">{{ fechaHora(t.ot.fechas.inicio_real) }}</div>
@@ -91,26 +126,11 @@
           <div v-if="t.ot.fechas?.termino_real">
             <div class="def-k">Término real</div><div class="def-v mono">{{ fechaHora(t.ot.fechas.termino_real) }}</div>
           </div>
-          <div v-if="t.ejecucion?.duracion_dias">
-            <div class="def-k">Duración</div>
-            <div class="def-v mono">{{ t.ejecucion.duracion_dias }} días calendario</div>
-          </div>
           <div v-if="t.ot.fechas?.cierre">
             <div class="def-k">Cierre</div><div class="def-v mono">{{ fechaHora(t.ot.fechas.cierre) }}</div>
           </div>
         </div>
-
-        <!-- La emergencia se explica siempre: es una excepción que exige justificarse. -->
-        <div v-if="t.ot.emergencia" class="card-cuerpo" style="border-top: 1px solid var(--line-soft)">
-          <div class="sello-motivo" style="border-left-color: var(--rojo-linea); background: var(--rojo-piel)">
-            <b style="color: var(--rojo)">Clasificada como emergencia</b>
-            {{ t.ot.emergencia.justificacion }}
-            <div class="muted mono" style="font-size: 10.5px; margin-top: 3px">
-              {{ t.ot.emergencia.declarada_por }} · {{ fechaHora(t.ot.emergencia.declarada_at) }}
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
 
       <Tabs :tabs="pestanas" :activo="tab" @cambiar="tab = $event" />
 
@@ -124,9 +144,37 @@
 
       <!-- La pestaña que da nombre al producto. -->
       <TarjetaViajera v-else-if="tab === 'trazabilidad'" :eventos="t.eventos ?? []" :meta="t._meta" />
+
+      <!--
+        Las acciones que piden un texto o una elección son modales propios, no
+        diálogos del sistema: comparten ancho, tipografía y botonera con el
+        resto de la aplicación. Antes cada uno se dibujaba distinto y por eso se
+        veían desalineados entre sí.
+      -->
+      <ModalTexto
+        v-if="mt"
+        :abierto="!!mt"
+        v-bind="mt"
+        @cerrar="mt = null"
+        @hecho="trasAccion(mt.exito)"
+      />
+      <ModalElegir
+        v-if="me"
+        :abierto="!!me"
+        v-bind="me"
+        @cerrar="me = null"
+        @hecho="trasAccion(me.exito)"
+      />
     </template>
 
-    <Vacio v-else titulo="No encontramos esa orden de trabajo" texto="Puede que se haya cancelado o que no esté en su alcance." />
+    <Vacio
+      v-else
+      :icono="SearchX"
+      titulo="No encontramos esa orden de trabajo"
+      texto="Puede que se haya cancelado o que no esté dentro de su alcance."
+    >
+      <router-link class="btn" to="/ot">Volver al listado</router-link>
+    </Vacio>
   </div>
 </template>
 
@@ -134,13 +182,16 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  ArrowLeft, Ban, CheckCheck, ClipboardCheck, FileText, GitBranch, Lock, Pause, Play, Plus, Stethoscope, Unlock,
+  ArrowLeft, Ban, CheckCheck, ClipboardCheck, Coins, FileText, GitBranch, Info, Lock,
+  Pause, Play, Plus, SearchX, Siren, Stethoscope, TriangleAlert, Unlock,
 } from "lucide-vue-next";
 import Cargando from "../../../shared/components/ui/Cargando.vue";
 import Vacio from "../../../shared/components/ui/Vacio.vue";
 import Tabs from "../../../shared/components/ui/Tabs.vue";
 import EstadoOt from "../../../shared/components/ui/EstadoOt.vue";
 import TarjetaViajera from "../../../shared/components/ui/TarjetaViajera.vue";
+import ModalTexto from "../../../shared/components/ui/ModalTexto.vue";
+import ModalElegir from "../../../shared/components/ui/ModalElegir.vue";
 import OtResumen from "../components/OtResumen.vue";
 import OtDiagnosticos from "../components/OtDiagnosticos.vue";
 import OtCotizaciones from "../components/OtCotizaciones.vue";
@@ -151,12 +202,14 @@ import OtConversacion from "../components/OtConversacion.vue";
 import { otApi } from "../api/ot.api.js";
 import { usuariosApi } from "../../shared/catalogos.api.js";
 import { useAuth } from "../../../shared/composables/useAuth.js";
+import { useTitulo } from "../../../shared/composables/useTitulo.js";
 import { mostrarError, notify } from "../../../shared/composables/useNotify.js";
-import { etiqueta, fecha, fechaHora } from "../../../shared/utils/formato.js";
+import { dias, desde, etiqueta, fecha, fechaHora, galonEstado, monto } from "../../../shared/utils/formato.js";
 
 const route = useRoute();
 const router = useRouter();
 const { puede } = useAuth();
+const { fijar: fijarTitulo } = useTitulo();
 
 const id = computed(() => route.params.id);
 const t = ref(null);
@@ -165,6 +218,16 @@ const tab = ref("resumen");
 
 const titulo = computed(
   () => t.value?.origen?.solicitud?.titulo ?? t.value?.origen?.ot_padre?.motivo_derivacion ?? "",
+);
+
+const cotizacionVigente = computed(() => (t.value?.cotizaciones ?? []).find((c) => c.vigente));
+const hayDiagnostico = computed(() => (t.value?.diagnosticos ?? []).some((d) => d.vigente));
+
+const bloqueantes = computed(
+  () =>
+    (t.value?.derivadas ?? []).filter(
+      (d) => d.es_bloqueante && !["cerrada", "cancelada"].includes(d.estado),
+    ).length,
 );
 
 const pestanas = computed(() => {
@@ -193,15 +256,17 @@ const pestanas = computed(() => {
 const p = computed(() => {
   const e = t.value?.ot?.estado;
   const pausada = t.value?.ot?.condicion === "pausada";
-  const hayDiag = (t.value?.diagnosticos ?? []).some((d) => d.vigente);
-  const hayCotiz = (t.value?.cotizaciones ?? []).some((c) => c.vigente);
+  const hayCotiz = !!cotizacionVigente.value;
   const revisionAprobada = (t.value?.cierre?.trabajo_realizado ?? []).some(
     (w) => w.vigente && w.revision?.resultado === "aprobado",
   );
   return {
     diagnosticar: puede("diagnosticos:registrar") && ["creada", "en_diagnostico", "en_cotizacion", "en_trabajo"].includes(e),
     cotizar: puede("cotizaciones:cargar") && ["en_diagnostico", "en_cotizacion", "en_trabajo"].includes(e),
-    iniciar: puede("ejecucion:iniciar") && ["en_cotizacion", "en_diagnostico"].includes(e) && (hayCotiz || t.value?.ot?.es_emergencia),
+    iniciar:
+      puede("ejecucion:iniciar") &&
+      ["en_cotizacion", "en_diagnostico"].includes(e) &&
+      (hayCotiz || t.value?.ot?.es_emergencia),
     avanzar: puede("ejecucion:avanzar") && e === "en_trabajo",
     pausar: puede("ejecucion:pausar") && e === "en_trabajo" && !pausada,
     reanudar: puede("ejecucion:pausar") && pausada,
@@ -209,18 +274,63 @@ const p = computed(() => {
     revisar: puede("ot:revisar") && e === "trabajo_realizado",
     cerrar: puede("ot:cerrar") && e === "trabajo_realizado" && revisionAprobada,
     reabrir: puede("ot:reabrir") && e === "cerrada",
-    derivar: puede("ot:derivar") && !["cancelada"].includes(e),
+    derivar: puede("ot:derivar") && e !== "cancelada",
     cancelar: puede("ot:cancelar") && !["cerrada", "cancelada"].includes(e),
     prioridad: puede("ot:cambiar_prioridad") && !["cerrada", "cancelada"].includes(e),
-    _hayDiag: hayDiag,
   };
 });
 
-function irA(t2) { tab.value = t2; }
+const hayAcciones = computed(() => Object.values(p.value).some(Boolean));
+
+/**
+ * El siguiente paso se deduce del estado real, no del rol: aunque quien mire no
+ * pueda ejecutarlo, saber qué falta es información útil (y evita el clásico
+ * "¿por qué no avanza esta OT?").
+ */
+const siguientePaso = computed(() => {
+  const x = t.value;
+  if (!x) return null;
+  const e = x.ot.estado;
+
+  if (e === "cancelada") return null;
+  if (x.ot.condicion === "pausada") {
+    return { tono: "espera", icono: Pause, titulo: "El trabajo está pausado. ", texto: "Mientras lo esté no se puede declarar realizado." };
+  }
+  if (["creada", "en_diagnostico"].includes(e) && !hayDiagnostico.value) {
+    // La emergencia se salta la COTIZACIÓN, no el diagnóstico (Anexo A). Decirlo
+    // aquí evita la pregunta de "es urgente, ¿por qué no me deja arrancar?".
+    return x.ot.es_emergencia
+      ? { tono: "espera", icono: Stethoscope, titulo: "Registre el diagnóstico para poder arrancar. ", texto: "Por ser emergencia podrá iniciar sin cotización, pero el diagnóstico es el paso que habilita el inicio." }
+      : { tono: "info", icono: Stethoscope, titulo: "Falta el diagnóstico. ", texto: "La OT no pasa a cotización sin un diagnóstico vigente con sus cuatro campos técnicos." };
+  }
+  if (["en_diagnostico", "en_cotizacion"].includes(e) && !cotizacionVigente.value && !x.ot.es_emergencia) {
+    return { tono: "info", icono: Coins, titulo: "Falta la cotización. ", texto: "El inicio normal del trabajo requiere una cotización vigente." };
+  }
+  if (["en_diagnostico", "en_cotizacion"].includes(e)) {
+    return { tono: "espera", icono: Play, titulo: "Lista para iniciar. ", texto: "Asigne un responsable de ejecución para empezar." };
+  }
+  if (e === "en_trabajo") {
+    return { tono: "", icono: Info, titulo: "En ejecución. ", texto: "Registre avances; al terminar, declare el trabajo realizado." };
+  }
+  if (e === "trabajo_realizado") {
+    const aprobada = (x.cierre?.trabajo_realizado ?? []).some((w) => w.vigente && w.revision?.resultado === "aprobado");
+    return aprobada
+      ? { tono: "ok", icono: Lock, titulo: "Revisión aprobada. ", texto: "Se puede cerrar la OT." }
+      : { tono: "espera", icono: ClipboardCheck, titulo: "Esperando revisión del coordinador. ", texto: "Debe aprobarse o devolverse con observaciones antes del cierre." };
+  }
+  if (e === "cerrada" && x.administrativo && x.administrativo.estado_consolidado !== "administracion_completa") {
+    return { tono: "espera", icono: TriangleAlert, titulo: "Cerrada con pendiente administrativo. ", texto: `Sigue en ${etiqueta(x.administrativo.estado_consolidado).toLowerCase()}. Registrarlo no reabre la OT.` };
+  }
+  if (bloqueantes.value) {
+    return { tono: "peligro", icono: GitBranch, titulo: `${bloqueantes.value} derivada(s) bloquean el cierre. `, texto: "El padre no cierra mientras sigan vivas." };
+  }
+  return null;
+});
 
 async function recargar() {
   try {
     t.value = (await otApi.obtener(id.value)).data;
+    fijarTitulo(t.value?.ot?.numero ?? "OT");
   } catch (e) {
     t.value = null;
     await mostrarError(e, "No se pudo abrir la orden de trabajo");
@@ -229,14 +339,27 @@ async function recargar() {
   }
 }
 
-async function accion(fn, exito) {
-  try {
-    await fn();
-    await notify.exito(exito);
-    await recargar();
-  } catch (e) {
-    await mostrarError(e);
-  }
+/**
+ * Un solo sitio para los modales de acción: `mt` para los que piden un texto,
+ * `me` para los que piden elegir. Cada uno lleva su propia función de confirmar,
+ * que devuelve una promesa: si falla, el error se queda DENTRO del modal y lo
+ * escrito no se pierde.
+ */
+const mt = ref(null);
+const me = ref(null);
+
+async function trasAccion(exito) {
+  mt.value = null;
+  me.value = null;
+  if (exito) await notify.exito(exito);
+  await recargar();
+}
+
+/** Lanza si la API responde ok:false, para que el modal muestre el motivo. */
+async function exigirOk(promesa) {
+  const r = await promesa;
+  if (r && r.ok === false) throw new Error(r.error?.message ?? "No se pudo completar la acción.");
+  return r;
 }
 
 /**
@@ -244,222 +367,243 @@ async function accion(fn, exito) {
  * como en emergencia (cap. 29.1). Se elige aquí en lugar de fallar después.
  */
 async function iniciar() {
-  let ejecutores;
+  let personas = [];
   try {
-    const r = await usuariosApi.listar({ estado: "activo", pageSize: 100 });
-    ejecutores = Object.fromEntries((r.data ?? []).map((u) => [u.id, `${u.nombre}${u.cargo ? " · " + u.cargo : ""}`]));
+    personas = (await usuariosApi.asignables()).data ?? [];
   } catch (e) {
     return mostrarError(e, "No se pudo cargar la lista de responsables");
   }
-  if (!Object.keys(ejecutores).length) {
+  if (!personas.length) {
     return notify.aviso("No hay usuarios activos", "Cree o active un usuario para poder asignarlo como ejecutor.");
   }
 
-  const responsableId = await notify.elegir("¿Quién ejecuta el trabajo?", ejecutores, {
-    texto: t.value?.ot?.es_emergencia
+  me.value = {
+    titulo: "¿Quién ejecuta el trabajo?",
+    subtitulo: t.value?.ot?.es_emergencia
       ? "Es una emergencia: puede iniciar sin cotización, pero la regularización queda pendiente."
-      : "El inicio requiere cotización vigente y su confirmación.",
-    confirmar: "Iniciar trabajo",
-  });
-  if (!responsableId) return;
-
-  await accion(() => otApi.iniciar(id.value, { responsableId }), "Trabajo iniciado");
+      : "El inicio requiere una cotización vigente y su confirmación.",
+    confirmarTexto: "Iniciar trabajo",
+    opciones: personas.map((u) => ({ value: u.id, label: u.nombre, detalle: u.cargo ?? "" })),
+    exito: "Trabajo iniciado",
+    alConfirmar: ({ opcion }) => exigirOk(otApi.iniciar(id.value, { responsableId: opcion })),
+  };
 }
 
-async function registrarAvance() {
-  const d = await notify.pedirTexto("Registrar avance", {
-    texto: "Cuente qué se hizo. El porcentaje no es obligatorio.",
+function registrarAvance() {
+  mt.value = {
+    titulo: "Registrar avance",
+    subtitulo: "Cuente qué se hizo. El porcentaje es opcional.",
+    label: "Qué se hizo",
     placeholder: "Ej. cabezal desmontado y enviado a rectificado",
-    confirmar: "Registrar",
+    confirmarTexto: "Registrar",
     minimo: 5,
-  });
-  if (d) await accion(() => otApi.avance(id.value, { descripcion: d }), "Avance registrado");
+    conPorcentaje: true,
+    exito: "Avance registrado",
+    alConfirmar: ({ texto, porcentaje }) =>
+      exigirOk(otApi.avance(id.value, { descripcion: texto, porcentaje })),
+  };
 }
 
-async function pausar() {
-  const m = await notify.pedirTexto("Pausar el trabajo", {
-    texto: "Mientras esté pausada no se puede declarar el trabajo realizado.",
+function pausar() {
+  mt.value = {
+    titulo: "Pausar el trabajo",
+    subtitulo:
+      "Mientras esté pausada no se puede declarar el trabajo realizado. La pausa se reporta aparte: no se descuenta de la duración.",
+    label: "Motivo de la pausa",
     placeholder: "Ej. esperando el eje del taller de rectificado",
-    confirmar: "Pausar",
+    confirmarTexto: "Pausar",
+    tono: "accion",
     minimo: 5,
-  });
-  if (m) await accion(() => otApi.pausar(id.value, { motivoTexto: m }), "Trabajo pausado");
+    exito: "Trabajo pausado",
+    alConfirmar: ({ texto }) => exigirOk(otApi.pausar(id.value, { motivoTexto: texto })),
+  };
 }
 
 async function reanudar() {
-  await accion(() => otApi.reanudar(id.value, {}), "Trabajo reanudado");
-}
-
-async function declarar() {
-  const d = await notify.pedirTexto("Declarar el trabajo realizado", {
-    texto: "Describa el resultado final. El coordinador lo revisará antes del cierre.",
-    placeholder: "Ej. rodamiento reemplazado, alineado y probado 2 h sin fuga",
-    confirmar: "Declarar",
-    minimo: 10,
-  });
-  if (d) await accion(() => otApi.declararTrabajo(id.value, { descripcion: d }), "Trabajo declarado");
-}
-
-async function revisar() {
-  const r = await notify.elegir(
-    "Revisar el trabajo declarado",
-    { aprobado: "Aprobar para el cierre", correccion_solicitada: "Devolver con correcciones" },
-    { confirmar: "Continuar" },
-  );
-  if (!r) return;
-  let observacion = "";
-  if (r === "correccion_solicitada") {
-    observacion = await notify.pedirTexto("¿Qué hay que corregir?", {
-      texto: "El ejecutor verá esta observación y la OT volverá a En trabajo.",
-      confirmar: "Devolver",
-      minimo: 5,
-    });
-    if (!observacion) return;
+  try {
+    await otApi.reanudar(id.value, {});
+    await trasAccion("Trabajo reanudado");
+  } catch (e) {
+    await mostrarError(e);
   }
-  await accion(
-    () => otApi.revisar(id.value, { resultado: r, observacion }),
-    r === "aprobado" ? "Trabajo aprobado" : "Devuelto con observación",
-  );
+}
+
+function declarar() {
+  mt.value = {
+    titulo: "Declarar el trabajo realizado",
+    subtitulo: "Describa el resultado final. El coordinador lo revisará antes del cierre.",
+    label: "Resultado del trabajo",
+    placeholder: "Ej. rodamiento reemplazado, alineado y probado 2 h sin fuga",
+    confirmarTexto: "Declarar",
+    tono: "accion",
+    minimo: 10,
+    alto: 120,
+    exito: "Trabajo declarado",
+    alConfirmar: ({ texto }) => exigirOk(otApi.declararTrabajo(id.value, { descripcion: texto })),
+  };
+}
+
+function revisar() {
+  me.value = {
+    titulo: "Revisar el trabajo declarado",
+    subtitulo: "Aprobar habilita el cierre. Devolver lo regresa a En trabajo con su observación.",
+    confirmarTexto: "Registrar revisión",
+    opciones: [
+      { value: "aprobado", label: "Aprobar para el cierre", detalle: "El trabajo cumple con lo declarado." },
+      {
+        value: "correccion_solicitada",
+        label: "Devolver con correcciones",
+        detalle: "El ejecutor verá la observación y la OT volverá a En trabajo.",
+        exigeTexto: true,
+        labelTexto: "¿Qué hay que corregir?",
+        minimo: 5,
+      },
+    ],
+    exito: "Revisión registrada",
+    alConfirmar: ({ opcion, texto }) =>
+      exigirOk(otApi.revisar(id.value, { resultado: opcion, observacion: texto })),
+  };
 }
 
 /**
  * Cerrar es el flujo con más matiz del producto.
  *
  * La API responde ok:false con `requiere_confirmacion` cuando hay pendientes
- * administrativos. Eso NO es un error: es el sistema pidiendo la confirmación
- * explícita y la observación que el cap. 31.2 exige. Se traduce en un segundo
- * diálogo, no en un mensaje de fallo.
+ * administrativos. Eso NO es un error: es el sistema pidiendo la constancia que
+ * exige el cap. 31.2. Se traduce en un segundo modal, no en un mensaje de fallo.
  */
 async function cerrar() {
   const r = await otApi.cerrar(id.value, {});
-  if (r.ok) {
-    await notify.exito("Orden de trabajo cerrada", r.data?.indicador ?? "");
-    return recargar();
-  }
+  if (r.ok) return trasAccion("Orden de trabajo cerrada");
 
   if (r.data?.requiere_confirmacion) {
-    const ok = await notify.confirmar(
-      "El seguimiento administrativo tiene pendientes",
-      `Estado actual: ${etiqueta(r.data.estado_administrativo)}. Puede cerrar la OT igualmente, pero debe dejar constancia del pendiente.`,
-      { confirmar: "He revisado el seguimiento" },
-    );
-    if (!ok) return;
-
-    const obs = await notify.pedirTexto("Explique el pendiente", {
-      texto: "Quedará visible en las listas y en el tablero hasta que se resuelva.",
+    mt.value = {
+      titulo: "Cerrar con el seguimiento administrativo pendiente",
+      subtitulo: `Estado actual: ${etiqueta(r.data.estado_administrativo)}. Puede cerrar igualmente, pero debe dejar constancia del pendiente: quedará visible en las listas y en el tablero hasta que se resuelva.`,
+      label: "Constancia del pendiente",
       placeholder: "Ej. Compras emite la OC esta semana",
-      confirmar: "Cerrar la OT",
+      confirmarTexto: "Cerrar la OT",
       minimo: 10,
-    });
-    if (!obs) return;
-
-    const r2 = await otApi.cerrar(id.value, { adminRevisado: true, observacionPendiente: obs });
-    if (r2.ok) {
-      await notify.exito("Orden de trabajo cerrada", r2.data?.indicador ?? "");
-      return recargar();
-    }
-    return notify.error("No se pudo cerrar", r2.error?.message ?? "");
+      exito: "Orden de trabajo cerrada",
+      alConfirmar: ({ texto }) =>
+        exigirOk(otApi.cerrar(id.value, { adminRevisado: true, observacionPendiente: texto })),
+    };
+    return;
   }
-
   return notify.error("No se pudo cerrar", r.error?.message ?? "");
 }
 
-async function reabrir() {
-  const m = await notify.pedirTexto("Reabrir la orden de trabajo", {
-    texto: "El cierre anterior se conserva. Explique por qué se reabre.",
+function reabrir() {
+  mt.value = {
+    titulo: "Reabrir la orden de trabajo",
+    subtitulo: "El cierre anterior se conserva íntegro. Explique por qué se reabre.",
+    label: "Motivo de la reapertura",
     placeholder: "Ej. la fuga reapareció a los tres días",
-    confirmar: "Reabrir",
+    confirmarTexto: "Reabrir",
     minimo: 10,
-  });
-  if (m) await accion(() => otApi.reabrir(id.value, { motivoTexto: m }), "Orden de trabajo reabierta");
+    exito: "Orden de trabajo reabierta",
+    alConfirmar: ({ texto }) => exigirOk(otApi.reabrir(id.value, { motivoTexto: texto })),
+  };
 }
 
-async function derivar() {
-  const m = await notify.pedirTexto("Crear una OT derivada", {
-    texto:
+function derivar() {
+  mt.value = {
+    titulo: "Crear una OT derivada",
+    subtitulo:
       "Una derivada es para cuando el trabajo deja de ser una sola intervención: otra especialidad, otro proveedor, otro alcance. Para una nota basta un avance.",
+    label: "Motivo de la derivación",
     placeholder: "Ej. el tablero requiere intervención eléctrica con otro proveedor",
-    confirmar: "Crear derivada",
+    confirmarTexto: "Crear derivada",
     minimo: 10,
-  });
-  if (!m) return;
-  try {
-    const r = await otApi.crearDerivada(id.value, { motivoDerivacion: m });
-    await notify.exito("Derivada creada", `${r.data.numero_ot} · nivel ${r.data.nivel}`);
-    router.push(`/ot/${r.data.id}`);
-  } catch (e) {
-    await mostrarError(e);
-  }
+    alto: 110,
+    alConfirmar: async ({ texto }) => {
+      const r = await otApi.crearDerivada(id.value, { motivoDerivacion: texto });
+      mt.value = null;
+      await notify.exito("Derivada creada", `${r.data.numero_ot} · nivel ${r.data.nivel}`);
+      router.push(`/ot/${r.data.id}`);
+    },
+  };
 }
 
 /**
  * Cancelar con derivadas activas: la API devuelve la lista y el usuario decide
  * qué hacer con ellas (cap. 25.3). No se decide por él.
  */
-async function cancelar() {
-  const obs = await notify.pedirTexto("Cancelar la orden de trabajo", {
-    texto: "La OT se conserva con todo su historial. Explique por qué se cancela.",
-    confirmar: "Continuar",
+function cancelar() {
+  mt.value = {
+    titulo: "Cancelar la orden de trabajo",
+    subtitulo: "La OT se conserva con todo su historial. Explique por qué se cancela.",
+    label: "Motivo de la cancelación",
+    placeholder: "Ej. el equipo se reemplaza completo, el alcance ya no aplica",
+    confirmarTexto: "Cancelar la OT",
+    peligro: true,
     minimo: 10,
-  });
-  if (!obs) return;
+    alConfirmar: async ({ texto }) => {
+      const r = await otApi.cancelar(id.value, { observacion: texto });
+      if (r.ok) {
+        mt.value = null;
+        return trasAccion("Orden de trabajo cancelada");
+      }
 
-  const r = await otApi.cancelar(id.value, { observacion: obs });
-  if (r.ok) {
-    await notify.exito("Orden de trabajo cancelada");
-    return recargar();
-  }
+      const activas = r.data?.derivadas_activas ?? [];
+      if (!activas.length) throw new Error(r.error?.message ?? "No se pudo cancelar.");
 
-  const activas = r.data?.derivadas_activas ?? [];
-  if (activas.length) {
-    const lista = activas.map((d) => `${d.numero} (${etiqueta(d.estado)})`).join(", ");
-    const trato = await notify.elegir(
-      `Esta OT tiene ${activas.length} derivada(s) activa(s)`,
-      {
-        cancelar: "Cancelarlas también",
-        independizar: "Mantenerlas activas por su cuenta",
-      },
-      { texto: `Afecta a: ${lista}. Decida qué pasa con ellas.`, confirmar: "Aplicar" },
-    );
-    if (!trato) return;
-
-    const r2 = await otApi.cancelar(id.value, { observacion: obs, tratamientoDerivadas: trato });
-    if (r2.ok) {
-      await notify.exito("Orden de trabajo cancelada");
-      return recargar();
-    }
-    return notify.error("No se pudo cancelar", r2.error?.message ?? "");
-  }
-
-  return notify.error("No se pudo cancelar", r.error?.message ?? "");
+      // Hay hijas vivas: se cierra este modal y se pide la decisión sobre ellas.
+      mt.value = null;
+      me.value = {
+        titulo: `Esta OT tiene ${activas.length} derivada(s) activa(s)`,
+        subtitulo: `Afecta a: ${activas.map((x) => `${x.numero} (${etiqueta(x.estado)})`).join(", ")}. Decida qué pasa con ellas antes de cancelar.`,
+        confirmarTexto: "Cancelar la OT",
+        opciones: [
+          {
+            value: "independizar",
+            label: "Mantenerlas activas por su cuenta",
+            detalle: "Siguen su curso como OT independientes; se conserva de quién venían.",
+          },
+          {
+            value: "cancelar",
+            label: "Cancelarlas también",
+            detalle: "Se cancelan con el mismo motivo. No se puede deshacer.",
+            peligro: true,
+          },
+        ],
+        exito: "Orden de trabajo cancelada",
+        alConfirmar: ({ opcion }) =>
+          exigirOk(otApi.cancelar(id.value, { observacion: texto, tratamientoDerivadas: opcion })),
+      };
+    },
+  };
 }
 
-async function cambiarPrioridad() {
-  const nueva = await notify.elegir(
-    "Cambiar la prioridad técnica",
-    { critica: "Crítica", alta: "Alta", media: "Media", baja: "Baja" },
-    { texto: "La prioridad que percibió el solicitante no cambia: son dos cosas distintas.", confirmar: "Cambiar" },
-  );
-  if (!nueva) return;
-
+function cambiarPrioridad() {
+  const actual = t.value.ot.prioridad_tecnica;
   // Bajar una prioridad alta o cambiarla en ejecución exige motivo (cap. 25.4).
-  const exigeMotivo =
-    ["critica", "alta"].includes(t.value.ot.prioridad_tecnica) || t.value.ot.estado === "en_trabajo";
-  let motivo = "";
-  if (exigeMotivo) {
-    motivo = await notify.pedirTexto("¿Por qué cambia la prioridad?", { confirmar: "Cambiar", minimo: 5 });
-    if (!motivo) return;
-  }
-  await accion(() => otApi.cambiarPrioridad(id.value, { prioridad: nueva, motivo }), "Prioridad actualizada");
+  const exigeMotivo = ["critica", "alta"].includes(actual) || t.value.ot.estado === "en_trabajo";
+
+  me.value = {
+    titulo: "Cambiar la prioridad técnica",
+    subtitulo:
+      "La prioridad que percibió el solicitante no cambia: son dos cosas distintas y ambas se conservan.",
+    confirmarTexto: "Cambiar prioridad",
+    opciones: ["critica", "alta", "media", "baja"]
+      .filter((x) => x !== actual)
+      .map((x) => ({
+        value: x,
+        label: etiqueta(x),
+        detalle: x === actual ? "Actual" : "",
+        exigeTexto: exigeMotivo,
+        labelTexto: "¿Por qué cambia la prioridad?",
+        minimo: 5,
+      })),
+    exito: "Prioridad actualizada",
+    alConfirmar: ({ opcion, texto }) =>
+      exigirOk(otApi.cambiarPrioridad(id.value, { prioridad: opcion, motivo: texto })),
+  };
 }
 
-watch(id, recargar);
+watch(id, () => {
+  tab.value = "resumen";
+  recargar();
+});
 onMounted(recargar);
 </script>
-
-<style scoped>
-.ficha-head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 20px; margin-bottom: 18px;
-}
-</style>

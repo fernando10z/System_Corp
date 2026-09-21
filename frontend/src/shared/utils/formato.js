@@ -13,10 +13,17 @@ export function fecha(v) {
   return new Date(v).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric", timeZone: ZONA });
 }
 
+/**
+ * Fecha y hora en formato de 24 horas. es-PE por defecto escribe "11:00 p. m.",
+ * que en un taller que trabaja por turnos es ambiguo de leer y además parte la
+ * línea en las rejillas de datos. En una bitácora de mantenimiento, 23:00 es
+ * 23:00.
+ */
 export function fechaHora(v) {
   if (!v) return "—";
   return new Date(v).toLocaleString("es-PE", {
-    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: ZONA,
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false, timeZone: ZONA,
   });
 }
 
@@ -136,4 +143,53 @@ export function claseSello(evento) {
   if (["ot_cancelada", "ot_reabierta", "incidencia_registrada", "solped_anulada", "cotizacion_invalidada"].includes(evento)) return "alerta";
   if (["pausa_registrada", "trabajo_declarado", "solped_lista"].includes(evento)) return "espera";
   return "";
+}
+
+/**
+ * Color del galón de la ficha: repite el estado de la OT en el borde de la
+ * cabecera para reconocerla sin leer. Devuelve un token, no un hex, para que
+ * siga al tema.
+ */
+const GALON = {
+  creada: "var(--line-strong)",
+  en_diagnostico: "var(--blue)",
+  en_cotizacion: "var(--violet)",
+  en_trabajo: "var(--amber)",
+  trabajo_realizado: "var(--emerald)",
+  cerrada: "var(--emerald-deep)",
+  cancelada: "var(--ink-4)",
+};
+
+export function galonEstado(estado) {
+  return GALON[estado] ?? "var(--line-strong)";
+}
+
+/** Tono de una píldora según el estado de una solicitud. */
+export function tonoSolicitud(estado) {
+  if (estado === "convertida_en_ot") return "ok";
+  if (["rechazada", "duplicada"].includes(estado)) return "danger";
+  if (["observada", "enviada", "en_revision"].includes(estado)) return "warn";
+  if (estado === "derivada") return "violet";
+  return "neutral";
+}
+
+/** Tono de una píldora según el estado administrativo consolidado. */
+export function tonoAdmin(estado) {
+  if (["administracion_completa", "liberacion_total"].includes(estado)) return "ok";
+  if (estado === "sin_solped") return "neutral";
+  return "warn";
+}
+
+/** "3 días" / "1 día": para duraciones ya calculadas por la API. */
+export function dias(n) {
+  if (n === null || n === undefined || n === "") return "—";
+  return `${n} ${Number(n) === 1 ? "día" : "días"}`;
+}
+
+/** "12 h" con el tono correcto: pasadas 24 h de espera, deja de ser normal. */
+export function claseEspera(horas) {
+  if (horas === null || horas === undefined) return "muted";
+  if (horas > 48) return "p-critica";
+  if (horas > 24) return "p-alta";
+  return "muted";
 }

@@ -83,6 +83,15 @@ export async function apiFetch(path, { method = "GET", body, headers = {}, _rein
   // `esperarNoOk` deja pasar el sobre para que quien llama lo interprete.
   if (esperarNoOk && payload) return payload;
 
+  // El limitador de peticiones responde con el formato de Nest, no con el sobre
+  // {ok,data,error} del resto de la API: sin esto el usuario vería "Error 429".
+  if (res.status === 429) {
+    throw Object.assign(
+      new Error("Demasiados intentos seguidos. Espere un minuto y vuelva a probar."),
+      { code: "RATE_LIMIT", status: 429 },
+    );
+  }
+
   if (!res.ok || payload?.ok === false) {
     throw Object.assign(new Error(payload?.error?.message ?? `Error ${res.status}`), {
       code: payload?.error?.code,
