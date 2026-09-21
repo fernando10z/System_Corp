@@ -51,18 +51,62 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'data', v);
 END; $$;
 
+-- ── Login, con bloqueo por intentos fallidos ─────────────────────────────────
+-- Un límite por IP no protege una cuenta: desde una botnet cada intento llega de
+-- una IP distinta y el contador nunca sube. El contador va junto a la cuenta.
+--
+-- El umbral y la espera son configurables por tenant (clave
+-- `bloqueo_credenciales`), porque cada organización tiene su propia política y
+-- el cap. 17 dice que eso se configura, no se cablea.
 CREATE OR REPLACE FUNCTION app.sp_auth_login(p_email TEXT, p_password TEXT)
 RETURNS JSONB LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = core, app, internal, public AS $$
-DECLARE u core.usuario%ROWTYPE;
+DECLARE
+  u          core.usuario%ROWTYPE;
+  v_cfg      JSONB;
+  v_intentos INT;
+  v_minutos  INT;
+  v_restan   INT;
 BEGIN
   SELECT * INTO u FROM core.usuario
    WHERE lower(email) = lower(btrim(p_email)) AND deleted_at IS NULL;
 
-  -- Mismo mensaje para usuario inexistente y contraseña incorrecta: no se le
-  -- regala a un atacante la confirmación de qué correos existen.
-  IF NOT FOUND OR u.password_hash IS NULL
-     OR u.password_hash <> crypt(p_password, u.password_hash) THEN
+  -- Usuario inexistente: mismo mensaje y mismo coste aparente que una
+  -- contraseña incorrecta. No se le regala a un atacante la confirmación de qué
+  -- correos existen.
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false,
+      'error', internal.error_jsonb('UNAUTHORIZED','Credenciales inválidas'));
+  END IF;
+
+  v_cfg      := coalesce(internal.config(u.tenant_id, 'bloqueo_credenciales'),
+                         '{"intentos":5,"minutos":15}'::jsonb);
+  v_intentos := coalesce((v_cfg->>'intentos')::int, 5);
+  v_minutos  := coalesce((v_cfg->>'minutos')::int, 15);
+
+  -- Cuenta bloqueada: se dice, y se dice cuánto falta. Callarlo sólo consigue
+  -- que la persona reintente y alargue su propio bloqueo.
+  IF u.bloqueado_hasta IS NOT NULL AND u.bloqueado_hasta > now() THEN
+    v_restan := greatest(1, ceil(extract(epoch FROM (u.bloqueado_hasta - now())) / 60)::int);
+    RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb(
+      'UNAUTHORIZED',
+      format('Cuenta bloqueada temporalmente por intentos fallidos. Vuelva a intentarlo en %s minuto(s).', v_restan)));
+  END IF;
+
+  IF u.password_hash IS NULL OR u.password_hash <> crypt(p_password, u.password_hash) THEN
+    UPDATE core.usuario
+       SET intentos_fallidos = intentos_fallidos + 1,
+           ultimo_intento_fallido_at = now(),
+           bloqueado_hasta = CASE
+             WHEN intentos_fallidos + 1 >= v_intentos THEN now() + make_interval(mins => v_minutos)
+             ELSE bloqueado_hasta END
+     WHERE id = u.id;
+
+    -- Cada fallo queda en la auditoría: es lo que permite detectar un ataque en
+    -- curso en vez de enterarse cuando ya entraron.
+    PERFORM internal.registrar_auditoria(u.id, u.tenant_id, 'login_fallido', 'usuario', u.id,
+      NULL, jsonb_build_object('intentos', u.intentos_fallidos + 1, 'umbral', v_intentos));
+
     RETURN jsonb_build_object('ok', false,
       'error', internal.error_jsonb('UNAUTHORIZED','Credenciales inválidas'));
   END IF;
@@ -72,7 +116,11 @@ BEGIN
       'error', internal.error_jsonb('FORBIDDEN','La cuenta está ' || u.estado));
   END IF;
 
-  UPDATE core.usuario SET ultimo_acceso_at = now() WHERE id = u.id;
+  -- Entrada correcta: el contador vuelve a cero y se levanta cualquier bloqueo.
+  UPDATE core.usuario
+     SET ultimo_acceso_at = now(), intentos_fallidos = 0, bloqueado_hasta = NULL
+   WHERE id = u.id;
+
   PERFORM internal.registrar_auditoria(u.id, u.tenant_id, 'login', 'usuario', u.id);
   RETURN app.fn_auth_perfil(u.id);
 EXCEPTION WHEN OTHERS THEN

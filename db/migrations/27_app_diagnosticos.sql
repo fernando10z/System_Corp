@@ -28,8 +28,8 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'diagnosticos:registrar');
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
   PERFORM internal.assert_alcance(p_user_id, o.sucursal_id, o.empresa_ruc_id, o.area_id);
@@ -77,6 +77,15 @@ BEGIN
     p_user_id, p_motivo_cambio, v_vigente.id, p_user_id, p_user_id)
   RETURNING * INTO v;
 
+  -- El primer diagnóstico saca la OT de 'creada'. Sin este avance la OT se
+  -- queda ahí para siempre y la cotización, la ejecución y el cierre se vuelven
+  -- inalcanzables (Anexo A). El guardián comprueba que el contexto técnico esté
+  -- completo antes de dejar pasar.
+  IF o.estado = 'creada' THEN
+    PERFORM internal.avanzar_estado_ot(p_tenant_id, p_ot_id, o.estado, 'en_diagnostico',
+      p_user_id, 'Primer diagnóstico registrado');
+  END IF;
+
   PERFORM internal.registrar_evento_ot(p_tenant_id, p_ot_id, 'diagnostico',
     CASE WHEN v_vigente.id IS NULL THEN 'diagnostico_creado' ELSE 'diagnostico_reemplazado' END,
     p_user_id, 'diagnostico', v.id,
@@ -106,7 +115,7 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'diagnosticos:aprobar');
 
-  SELECT * INTO d FROM core.diagnostico WHERE id = p_diagnostico_id;
+  SELECT * INTO d FROM core.diagnostico WHERE id = p_diagnostico_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','Diagnóstico no encontrado'));
   END IF;

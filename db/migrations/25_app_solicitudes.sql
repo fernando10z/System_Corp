@@ -274,6 +274,9 @@ DECLARE
   v_mias   BOOLEAN := coalesce((p_filtros->>'mias')::boolean, false);
   v_buscar TEXT := internal.normalizar_busqueda(p_filtros->>'buscar');
   v_pendientes BOOLEAN := coalesce((p_filtros->>'pendientes_revision')::boolean, false);
+  -- Rango sobre la fecha de envío; si aún es borrador, sobre la de creación.
+  v_desde  TEXT := nullif(p_filtros->>'desde','');
+  v_hasta  TEXT := nullif(p_filtros->>'hasta','');
 BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   v_global := internal.es_acceso_global(p_user_id, p_is_super_admin);
@@ -287,6 +290,8 @@ BEGIN
        AND (v_area   IS NULL OR s.area_id = v_area::uuid)
        AND (NOT v_mias OR s.solicitante_id = p_user_id)
        AND (NOT v_pendientes OR s.estado IN ('enviada','en_revision'))
+       AND (v_desde IS NULL OR coalesce(s.fecha_envio, s.created_at) >= v_desde::timestamptz)
+       AND (v_hasta IS NULL OR coalesce(s.fecha_envio, s.created_at) < (v_hasta::date + 1)::timestamptz)
        AND (nullif(v_buscar,'') IS NULL
             OR internal.normalizar_busqueda(s.titulo||' '||s.descripcion||' '||s.numero) LIKE '%'||v_buscar||'%')
        -- El solicitante ve lo suyo; el resto necesita alcance sobre el área (cap. 4.1).

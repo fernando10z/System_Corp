@@ -26,8 +26,8 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'ot:revisar');
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
   IF o.estado <> 'trabajo_realizado' THEN
@@ -128,8 +128,8 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'ot:cerrar');
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
 
@@ -241,8 +241,8 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'ot:reabrir');
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
   IF o.estado <> 'cerrada' THEN

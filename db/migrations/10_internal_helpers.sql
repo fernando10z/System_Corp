@@ -153,6 +153,30 @@ BEGIN
   END IF;
 END; $$;
 
+-- ── internal.ot_visible — el aislamiento entre clientes, en la lectura ───────
+-- assert_acceso_tenant comprueba que el USUARIO pertenece al tenant de su token.
+-- No dice nada sobre la OT: hasta que existió esta función, cualquier usuario
+-- autenticado con permiso podía leer —y operar— una OT de OTRO cliente sin más
+-- que conocer su id, porque la búsqueda era `WHERE id = p_ot_id` a secas. Es
+-- justo lo que prohíbe el cap. 21.3 y comprueba QA-25.
+--
+-- Devuelve la fila sólo si pertenece al tenant, o si quien pregunta tiene scope
+-- global (es_acceso_global, no `p_is_super_admin` a secas, como pide la nota de
+-- esa función). Si no, devuelve una fila vacía: quien llama responde "no existe"
+-- y no se confirma que el identificador sea real.
+CREATE OR REPLACE FUNCTION internal.ot_visible(
+  p_ot_id UUID, p_user_id UUID, p_tenant_id UUID, p_is_super_admin BOOLEAN)
+RETURNS core.orden_trabajo LANGUAGE plpgsql STABLE
+SECURITY DEFINER SET search_path = core, internal, public AS $$
+DECLARE o core.orden_trabajo%ROWTYPE;
+BEGIN
+  SELECT * INTO o FROM core.orden_trabajo
+   WHERE id = p_ot_id
+     AND deleted_at IS NULL
+     AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
+  RETURN o;
+END; $$;
+
 -- ── Correlativos ─────────────────────────────────────────────────────────────
 -- El número de OT es único dentro del tenant y NO se reutiliza (cap. 25.1).
 -- El FOR UPDATE serializa los concurrentes sobre la fila del correlativo.
@@ -211,6 +235,40 @@ BEGIN
                               valor_anterior, valor_nuevo, motivo, actor_id)
   VALUES (p_tenant_id, p_ot_id, p_dominio, p_evento, p_entidad_tipo, p_entidad_id,
           p_anterior, p_nuevo, p_motivo, p_actor_id);
+END; $$;
+
+-- ── internal.avanzar_estado_ot — el ÚNICO camino para mover el estado ────────
+-- El estado de la OT lo mueve el ACTO, no un botón aparte: registrar el primer
+-- diagnóstico la saca de 'creada', cargar la cotización la lleva a
+-- 'en_cotizacion', iniciar la pone 'en_trabajo'. Ese avance implícito es lo que
+-- describe el Anexo A, y estaba sólo a medias: sp_ot_iniciar lo hacía y los SP
+-- de diagnóstico y cotización no, así que toda OT se quedaba en 'creada' para
+-- siempre y ni cotizar, ni ejecutar, ni cerrar eran alcanzables.
+--
+-- Se concentra aquí para que ningún SP vuelva a mover el estado a mano: valida
+-- la transición contra el Anexo A, actualiza, deja historial y sella el evento
+-- en la bitácora. Las cuatro cosas, o ninguna.
+CREATE OR REPLACE FUNCTION internal.avanzar_estado_ot(
+  p_tenant_id UUID, p_ot_id UUID, p_desde core.ot_estado, p_hacia core.ot_estado,
+  p_user_id UUID, p_motivo TEXT DEFAULT NULL)
+RETURNS VOID LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = core, internal, public AS $$
+BEGIN
+  IF p_desde = p_hacia THEN RETURN; END IF;
+
+  PERFORM internal.validar_transicion_ot(p_ot_id, p_desde, p_hacia, p_motivo);
+
+  UPDATE core.orden_trabajo
+     SET estado = p_hacia, updated_by = p_user_id
+   WHERE id = p_ot_id;
+
+  INSERT INTO core.ot_estado_historial (
+    tenant_id, ot_id, estado_anterior, estado_nuevo, actor_id, motivo_texto)
+  VALUES (p_tenant_id, p_ot_id, p_desde, p_hacia, p_user_id, p_motivo);
+
+  PERFORM internal.registrar_evento_ot(
+    p_tenant_id, p_ot_id, 'ot', 'estado_cambiado', p_user_id, 'orden_trabajo', p_ot_id,
+    jsonb_build_object('estado', p_desde), jsonb_build_object('estado', p_hacia), p_motivo);
 END; $$;
 
 -- ── Configuración por tenant ─────────────────────────────────────────────────

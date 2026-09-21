@@ -291,6 +291,18 @@ CREATE TABLE IF NOT EXISTS core.cotizacion (
   CONSTRAINT ck_cotizacion_monto CHECK (monto IS NULL OR monto >= 0),
   CONSTRAINT ck_cotizacion_plazo CHECK (plazo_ofrecido_dias IS NULL OR plazo_ofrecido_dias >= 0)
 );
+-- La validez la pide el formulario y la lee el importador de PDF, pero no tenía
+-- dónde guardarse: se añade con ADD COLUMN IF NOT EXISTS para no romper la
+-- idempotencia del archivo. Una oferta vencida no debería aprobarse sin que
+-- alguien lo note, y para eso hay que saber cuántos días duraba.
+ALTER TABLE core.cotizacion ADD COLUMN IF NOT EXISTS validez_dias INT;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_cotizacion_validez') THEN
+    ALTER TABLE core.cotizacion
+      ADD CONSTRAINT ck_cotizacion_validez CHECK (validez_dias IS NULL OR validez_dias >= 0);
+  END IF;
+END $$;
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_cotizacion_vigente
   ON core.cotizacion (ot_id) WHERE vigente = true AND invalidada = false;
 CREATE INDEX IF NOT EXISTS ix_cotizacion_ot ON core.cotizacion (ot_id, version DESC);

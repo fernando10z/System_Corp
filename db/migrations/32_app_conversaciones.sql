@@ -31,8 +31,8 @@ BEGIN
       'error', internal.error_jsonb('VALIDATION','El mensaje no puede estar vacío','cuerpo'));
   END IF;
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
 
@@ -98,7 +98,7 @@ DECLARE v core.mensaje%ROWTYPE; v_ot UUID;
 BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
 
-  SELECT * INTO v FROM core.mensaje WHERE id = p_mensaje_id;
+  SELECT * INTO v FROM core.mensaje WHERE id = p_mensaje_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','Mensaje no encontrado'));
   END IF;
@@ -136,7 +136,7 @@ DECLARE v core.mensaje%ROWTYPE; v_ot UUID;
 BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
 
-  SELECT * INTO v FROM core.mensaje WHERE id = p_mensaje_id;
+  SELECT * INTO v FROM core.mensaje WHERE id = p_mensaje_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','Mensaje no encontrado'));
   END IF;
@@ -172,7 +172,10 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'conversacion:invitar');
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
+  END IF;
   SELECT * INTO c FROM core.conversacion WHERE ot_id = p_ot_id;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no tiene conversación'));

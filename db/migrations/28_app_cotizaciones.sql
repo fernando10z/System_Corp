@@ -11,14 +11,20 @@
 SET search_path = app, core, internal, public;
 
 -- ── CT-01 · Cargar cotización ────────────────────────────────────────────────
+-- La firma cambió al añadir p_validez_dias. CREATE OR REPLACE no reemplaza una
+-- función cuando varía el número de argumentos: crearía una segunda sobrecarga
+-- y la llamada quedaría ambigua. Por eso se elimina la anterior primero.
+DROP FUNCTION IF EXISTS app.sp_cotizacion_cargar(
+  UUID, UUID, BOOLEAN, UUID, UUID, TEXT, TEXT, TEXT, DATE, NUMERIC, TEXT, INT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION app.sp_cotizacion_cargar(
   p_user_id UUID, p_tenant_id UUID, p_is_super_admin BOOLEAN,
   p_ot_id UUID, p_proveedor_id UUID DEFAULT NULL,
   p_proveedor_nombre TEXT DEFAULT NULL, p_proveedor_ruc TEXT DEFAULT NULL,
   p_numero_cotizacion TEXT DEFAULT NULL, p_fecha_cotizacion DATE DEFAULT NULL,
   p_monto NUMERIC DEFAULT NULL, p_moneda TEXT DEFAULT 'PEN',
-  p_plazo_ofrecido_dias INT DEFAULT NULL, p_observaciones TEXT DEFAULT NULL,
-  p_motivo_reemplazo TEXT DEFAULT NULL)
+  p_plazo_ofrecido_dias INT DEFAULT NULL, p_validez_dias INT DEFAULT NULL,
+  p_observaciones TEXT DEFAULT NULL, p_motivo_reemplazo TEXT DEFAULT NULL)
 RETURNS JSONB LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = core, app, internal, public AS $$
 DECLARE
@@ -31,8 +37,8 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'cotizaciones:cargar');
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
   PERFORM internal.assert_alcance(p_user_id, o.sucursal_id, o.empresa_ruc_id, o.area_id);
@@ -61,15 +67,23 @@ BEGIN
 
   INSERT INTO core.cotizacion (
     tenant_id, ot_id, version, vigente, proveedor_id, proveedor_ruc, proveedor_nombre,
-    numero_cotizacion, fecha_cotizacion, monto, moneda, plazo_ofrecido_dias,
+    numero_cotizacion, fecha_cotizacion, monto, moneda, plazo_ofrecido_dias, validez_dias,
     observaciones, motivo_reemplazo, reemplaza_a, cargada_por, created_by, updated_by)
   VALUES (
     p_tenant_id, p_ot_id, v_version, true, p_proveedor_id,
     nullif(regexp_replace(coalesce(p_proveedor_ruc,''),'\D','','g'),''),
     p_proveedor_nombre, p_numero_cotizacion, p_fecha_cotizacion,
-    p_monto, coalesce(p_moneda,'PEN')::core.moneda_codigo, p_plazo_ofrecido_dias,
+    p_monto, coalesce(p_moneda,'PEN')::core.moneda_codigo, p_plazo_ofrecido_dias, p_validez_dias,
     p_observaciones, p_motivo_reemplazo, v_vigente.id, p_user_id, p_user_id, p_user_id)
   RETURNING * INTO v;
+
+  -- Cargar la cotización mueve la OT a 'en_cotizacion'. Desde 'en_trabajo' NO se
+  -- retrocede: ahí la carga es la regularización de una emergencia que arrancó
+  -- sin cotización, y el estado ya es el correcto (cap. 28.1).
+  IF o.estado = 'en_diagnostico' THEN
+    PERFORM internal.avanzar_estado_ot(p_tenant_id, p_ot_id, o.estado, 'en_cotizacion',
+      p_user_id, 'Cotización seleccionada cargada');
+  END IF;
 
   PERFORM internal.registrar_evento_ot(p_tenant_id, p_ot_id, 'cotizacion',
     CASE WHEN v_vigente.id IS NULL THEN 'cotizacion_cargada' ELSE 'cotizacion_reemplazada' END,
@@ -122,7 +136,7 @@ BEGIN
       'error', internal.error_jsonb('VALIDATION','Invalidar una cotización exige motivo','motivo'));
   END IF;
 
-  SELECT * INTO c FROM core.cotizacion WHERE id = p_cotizacion_id;
+  SELECT * INTO c FROM core.cotizacion WHERE id = p_cotizacion_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','Cotización no encontrada'));
   END IF;

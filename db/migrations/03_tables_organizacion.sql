@@ -293,3 +293,12 @@ CREATE TABLE IF NOT EXISTS core.correlativo (
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT uq_correlativo UNIQUE (tenant_id, tipo_documento)
 );
+
+-- ── Bloqueo por intentos fallidos (OWASP A07) ────────────────────────────────
+-- El límite por IP no basta: desde una botnet cada petición llega de una IP
+-- distinta. El contador vive junto a la cuenta, que es lo que de verdad se
+-- quiere proteger. Se añade con ADD COLUMN IF NOT EXISTS para no romper la
+-- idempotencia del archivo.
+ALTER TABLE core.usuario ADD COLUMN IF NOT EXISTS intentos_fallidos INT NOT NULL DEFAULT 0;
+ALTER TABLE core.usuario ADD COLUMN IF NOT EXISTS bloqueado_hasta TIMESTAMPTZ;
+ALTER TABLE core.usuario ADD COLUMN IF NOT EXISTS ultimo_intento_fallido_at TIMESTAMPTZ;

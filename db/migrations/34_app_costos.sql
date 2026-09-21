@@ -36,8 +36,8 @@ BEGIN
       'VALIDATION','El texto original del documento es obligatorio: no hay registros sin procedencia','texto_original'));
   END IF;
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
 

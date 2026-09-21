@@ -32,8 +32,8 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'administrativo:solped');
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
 
@@ -86,7 +86,7 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'administrativo:solped');
 
-  SELECT * INTO s FROM core.solped WHERE id = p_solped_id;
+  SELECT * INTO s FROM core.solped WHERE id = p_solped_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','SOLPED no encontrada'));
   END IF;
@@ -131,7 +131,7 @@ BEGIN
       'error', internal.error_jsonb('VALIDATION','Indique el número SAP','numero_sap'));
   END IF;
 
-  SELECT * INTO s FROM core.solped WHERE id = p_solped_id;
+  SELECT * INTO s FROM core.solped WHERE id = p_solped_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','SOLPED no encontrada'));
   END IF;
@@ -176,7 +176,7 @@ BEGIN
       'error', internal.error_jsonb('VALIDATION','Anular la SOLPED exige motivo','motivo'));
   END IF;
 
-  SELECT * INTO s FROM core.solped WHERE id = p_solped_id;
+  SELECT * INTO s FROM core.solped WHERE id = p_solped_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','SOLPED no encontrada'));
   END IF;
@@ -222,8 +222,8 @@ BEGIN
       'error', internal.error_jsonb('VALIDATION','Indique el número de OC','numero_oc'));
   END IF;
 
-  SELECT * INTO o FROM core.orden_trabajo WHERE id = p_ot_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN
+  o := internal.ot_visible(p_ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+  IF o.id IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','La OT no existe'));
   END IF;
 

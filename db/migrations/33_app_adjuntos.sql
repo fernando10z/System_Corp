@@ -104,7 +104,7 @@ BEGIN
   PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
   PERFORM internal.assert_permiso(p_user_id, 'adjuntos:retirar');
 
-  SELECT * INTO v FROM core.adjunto WHERE id = p_adjunto_id;
+  SELECT * INTO v FROM core.adjunto WHERE id = p_adjunto_id AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','Adjunto no encontrado'));
   END IF;
@@ -146,6 +146,47 @@ BEGIN
     AND (p_entidad_id IS NULL OR a.entidad_id = p_entidad_id);
 
   RETURN jsonb_build_object('ok', true, 'data', v);
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb(SQLSTATE, SQLERRM));
+END; $$;
+
+-- ── Resolver un adjunto para descargarlo ─────────────────────────────────────
+-- Antes el backend firmaba una URL a partir de la `storage_key` que le llegaba
+-- por querystring: cualquiera con una clave podía pedir el archivo, sin que la
+-- base comprobara de qué cliente era. Ahora se pide por id y es la base la que
+-- decide si ese adjunto pertenece al tenant de quien pregunta; la clave del
+-- almacén nunca sale de aquí hacia el navegador.
+CREATE OR REPLACE FUNCTION app.fn_adjunto_obtener(
+  p_user_id UUID, p_tenant_id UUID, p_is_super_admin BOOLEAN, p_adjunto_id UUID)
+RETURNS JSONB LANGUAGE plpgsql STABLE
+SECURITY DEFINER SET search_path = core, app, internal, public AS $$
+DECLARE
+  v core.adjunto%ROWTYPE;
+  o core.orden_trabajo%ROWTYPE;
+BEGIN
+  PERFORM internal.assert_acceso_tenant(p_user_id, p_tenant_id, p_is_super_admin);
+
+  SELECT * INTO v FROM core.adjunto
+   WHERE id = p_adjunto_id
+     AND estado = 'vigente'
+     AND (tenant_id = p_tenant_id OR internal.es_acceso_global(p_user_id, p_is_super_admin));
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','Adjunto no encontrado'));
+  END IF;
+
+  -- Si cuelga de una OT, el alcance organizacional manda igual que en el resto
+  -- del expediente: ver el archivo es ver la OT.
+  IF v.ot_id IS NOT NULL THEN
+    o := internal.ot_visible(v.ot_id, p_user_id, p_tenant_id, p_is_super_admin);
+    IF o.id IS NULL THEN
+      RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb('NOT_FOUND','Adjunto no encontrado'));
+    END IF;
+    PERFORM internal.assert_alcance(p_user_id, o.sucursal_id, o.empresa_ruc_id, o.area_id);
+  END IF;
+
+  RETURN jsonb_build_object('ok', true, 'data', jsonb_build_object(
+    'id', v.id, 'nombre', v.nombre, 'mime', v.mime_type,
+    'tamano', v.tamano_bytes, 'storage_key', v.storage_key));
 EXCEPTION WHEN OTHERS THEN
   RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb(SQLSTATE, SQLERRM));
 END; $$;

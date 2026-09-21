@@ -194,6 +194,53 @@ CREATE TRIGGER trg_ot_dirty_self
   AFTER INSERT OR UPDATE ON core.orden_trabajo
   FOR EACH ROW EXECUTE FUNCTION core.trg_dirty_ot_self();
 
+-- ── Datos maestros que el árbol embebe ──────────────────────────────────────
+-- El árbol no guarda sólo identificadores: embebe el nombre, el código y el
+-- ESTADO de la sucursal, la empresa/RUC y el área. Si una de ellas cambia —y
+-- sobre todo si se inactiva (QA-24)— el árbol cacheado sigue afirmando lo
+-- contrario hasta que algo más ensucie esa OT.
+--
+-- No es hipotético: lo destapó la propia verificación de integridad, que para
+-- eso existe. Inactivar una empresa/RUC dejaba sus OT diciendo "activo".
+CREATE OR REPLACE FUNCTION core.trg_dirty_por_organizacion() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_col TEXT := TG_ARGV[0];
+  r RECORD;
+BEGIN
+  -- Un UPDATE que sólo toca la marca de tiempo no cambia nada del árbol.
+  IF TG_OP = 'UPDATE'
+     AND (to_jsonb(OLD) - 'updated_at' - 'updated_by')
+       = (to_jsonb(NEW) - 'updated_at' - 'updated_by') THEN
+    RETURN NULL;
+  END IF;
+
+  FOR r IN EXECUTE
+    format('SELECT id FROM core.orden_trabajo WHERE %I = $1 AND deleted_at IS NULL', v_col)
+    USING NEW.id
+  LOOP
+    -- marcar_ot_dirty sube por la cadena de ancestros, que también embeben el
+    -- contexto organizacional de sus descendientes.
+    PERFORM internal.marcar_ot_dirty(r.id);
+  END LOOP;
+  RETURN NULL;
+END; $$;
+
+DROP TRIGGER IF EXISTS trg_sucursal_dirty ON core.sucursal;
+CREATE TRIGGER trg_sucursal_dirty
+  AFTER UPDATE ON core.sucursal
+  FOR EACH ROW EXECUTE FUNCTION core.trg_dirty_por_organizacion('sucursal_id');
+
+DROP TRIGGER IF EXISTS trg_empresa_ruc_dirty ON core.empresa_ruc;
+CREATE TRIGGER trg_empresa_ruc_dirty
+  AFTER UPDATE ON core.empresa_ruc
+  FOR EACH ROW EXECUTE FUNCTION core.trg_dirty_por_organizacion('empresa_ruc_id');
+
+DROP TRIGGER IF EXISTS trg_area_dirty ON core.area;
+CREATE TRIGGER trg_area_dirty
+  AFTER UPDATE ON core.area
+  FOR EACH ROW EXECUTE FUNCTION core.trg_dirty_por_organizacion('area_id');
+
 -- ═════════════════════════════════════════════════════════════════════════════
 -- PARTE 2 · El constructor del árbol
 --
@@ -284,7 +331,8 @@ SECURITY DEFINER SET search_path = core, internal, public AS $$
          ) ORDER BY a.created_at, a.id), '[]'::jsonb)
   FROM core.adjunto a
   LEFT JOIN core.usuario u ON u.id = a.autor_id
-  WHERE a.entidad_tipo = p_entidad_tipo AND a.entidad_id = p_entidad_id;
+  WHERE a.entidad_tipo = p_entidad_tipo AND a.entidad_id = p_entidad_id
+    AND a.estado = 'vigente';
 $$;
 
 -- ── Diagnósticos versionados ─────────────────────────────────────────────────
@@ -338,6 +386,7 @@ SECURITY DEFINER SET search_path = core, internal, public AS $$
            'monto',            c.monto,
            'moneda',           c.moneda,
            'plazo_ofrecido_dias', c.plazo_ofrecido_dias,
+           'validez_dias',     c.validez_dias,
            'observaciones',    c.observaciones,
            'motivo_reemplazo', c.motivo_reemplazo,
            'reemplaza_a',      c.reemplaza_a,
@@ -916,3 +965,17 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN jsonb_build_object('ok', false, 'error', internal.error_jsonb(SQLSTATE, SQLERRM));
 END; $$;
+
+-- ── Invalidación del caché al cambiar la forma del árbol ─────────────────────
+-- El árbol se guarda materializado en JSONB y se rehace solo cuando la OT está
+-- marcada como sucia. Eso funciona para los cambios de DATOS, pero no para los
+-- cambios de FORMA: si una migración añade un campo al árbol —como validez_dias
+-- en las cotizaciones—, las copias ya guardadas se quedan con la forma anterior
+-- y la verificación de integridad las reporta como desviadas.
+--
+-- Por eso cada aplicación de este archivo marca todo como sucio. No recalcula
+-- nada aquí: el motor es perezoso a propósito y cada árbol se rehará en su
+-- primera lectura, que es cuando alguien lo necesita de verdad.
+UPDATE core.orden_trabajo
+   SET trazabilidad_dirty = true
+ WHERE deleted_at IS NULL AND trazabilidad_dirty = false;

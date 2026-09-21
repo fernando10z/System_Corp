@@ -281,6 +281,8 @@ BEGIN
     (v_tenant,'sla_primera_revision',
      '{"critica":15,"alta":60,"media":480,"baja":1440}'::jsonb,
      'Minutos máximos de primera revisión por prioridad (cap. 34.2). Son objetivos, no cierran nada.'),
+    (v_tenant,'bloqueo_credenciales', '{"intentos":5,"minutos":15}'::jsonb,
+     'Intentos fallidos consecutivos antes de bloquear la cuenta, y minutos de espera (OWASP A07).'),
     (v_tenant,'umbral_muestra_costos', '{"minimo":3}'::jsonb,
      'Mínimo de casos comparables para publicar un promedio (cap. 32.4).'),
     (v_tenant,'exige_evidencia_cierre', 'false'::jsonb,
