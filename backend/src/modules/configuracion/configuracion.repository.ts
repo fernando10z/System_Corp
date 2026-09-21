@@ -11,7 +11,9 @@ export class ConfiguracionRepository {
   }
   guardar(ctx: SpContext, clave: string, valor: unknown, descripcion?: string) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_configuracion_guardar", ctx, [
-      clave, jsonbArg(valor), descripcion ?? null,
+      clave,
+      jsonbArg(valor),
+      descripcion ?? null,
     ]);
   }
 }

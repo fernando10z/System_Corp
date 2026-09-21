@@ -10,7 +10,13 @@ export class CostosService {
   private ctx(u: JwtPayload): SpContext {
     return { userId: u.sub, tenantId: u.tenant_id, isSuperAdmin: u.is_super_admin };
   }
-  registrar(u: JwtPayload, otId: string, d: RegistrarCostoDto) { return this.repo.registrar(this.ctx(u), otId, d); }
-  calificar(u: JwtPayload, id: string, d: CalificarCostoDto) { return this.repo.calificar(this.ctx(u), id, d); }
-  historico(u: JwtPayload, f: Record<string, unknown>) { return this.repo.historico(this.ctx(u), f); }
+  registrar(u: JwtPayload, otId: string, d: RegistrarCostoDto) {
+    return this.repo.registrar(this.ctx(u), otId, d);
+  }
+  calificar(u: JwtPayload, id: string, d: CalificarCostoDto) {
+    return this.repo.calificar(this.ctx(u), id, d);
+  }
+  historico(u: JwtPayload, f: Record<string, unknown>) {
+    return this.repo.historico(this.ctx(u), f);
+  }
 }

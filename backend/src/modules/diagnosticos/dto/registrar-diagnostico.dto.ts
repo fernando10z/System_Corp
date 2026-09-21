@@ -7,16 +7,20 @@ import { IsOptional, IsString, MinLength } from "class-validator";
  * versión vigente.
  */
 export class RegistrarDiagnosticoDto {
-  @IsString() @MinLength(10, { message: "El diagnóstico debe tener al menos 10 caracteres" })
+  @IsString()
+  @MinLength(10, { message: "El diagnóstico debe tener al menos 10 caracteres" })
   diagnostico!: string;
 
-  @IsString() @MinLength(5, { message: "Indique la causa probable" })
+  @IsString()
+  @MinLength(5, { message: "Indique la causa probable" })
   causaProbable!: string;
 
-  @IsString() @MinLength(5, { message: "Delimite el alcance de la intervención" })
+  @IsString()
+  @MinLength(5, { message: "Delimite el alcance de la intervención" })
   alcance!: string;
 
-  @IsString() @MinLength(5, { message: "Describa el trabajo a realizar (el plan, no lo ya ejecutado)" })
+  @IsString()
+  @MinLength(5, { message: "Describa el trabajo a realizar (el plan, no lo ya ejecutado)" })
   trabajoARealizar!: string;
 
   @IsOptional() @IsString() observaciones?: string;

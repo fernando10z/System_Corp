@@ -33,7 +33,9 @@ export class MailService {
       : null;
 
     if (!this.habilitado) {
-      this.logger.warn("Correo deshabilitado: las notificaciones sólo se verán dentro de la plataforma.");
+      this.logger.warn(
+        "Correo deshabilitado: las notificaciones sólo se verán dentro de la plataforma.",
+      );
     }
   }
 
@@ -49,7 +51,13 @@ export class MailService {
       return { ok: true };
     }
     try {
-      await this.transporter.sendMail({ from: this.from, to: para, subject: asunto, text: texto, html });
+      await this.transporter.sendMail({
+        from: this.from,
+        to: para,
+        subject: asunto,
+        text: texto,
+        html,
+      });
       return { ok: true };
     } catch (e) {
       const msg = (e as Error).message;

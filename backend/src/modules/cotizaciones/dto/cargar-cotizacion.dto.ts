@@ -1,4 +1,14 @@
-import { IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from "class-validator";
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsNumber,
+  Max,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from "class-validator";
 
 /**
  * MIP recibe la cotización FINAL YA SELECCIONADA (cap. 11): no compara
@@ -10,12 +20,16 @@ export class CargarCotizacionDto {
   @IsOptional() @IsString() proveedorNombre?: string;
   @IsOptional() @IsString() proveedorRuc?: string;
   @IsOptional() @IsString() numeroCotizacion?: string;
-  @IsOptional() @IsDateString() fechaCotizacion?: string;
+  /** Fecha del documento del proveedor, no la de carga. */
+  @IsOptional() @IsDateString() fecha?: string;
   @IsOptional() @IsNumber() @Min(0) monto?: number;
   @IsOptional() @IsIn(["PEN", "USD", "EUR"]) moneda?: string;
 
   /** El plazo pertenece a la cotización, no a la OT (cap. 12.1). */
   @IsOptional() @IsInt() @Min(0) plazoOfrecidoDias?: number;
+
+  /** Días que la oferta se mantiene en pie. Sirve para avisar si venció. */
+  @IsOptional() @IsInt() @Min(0) @Max(365) validezDias?: number;
 
   @IsOptional() @IsString() observaciones?: string;
 

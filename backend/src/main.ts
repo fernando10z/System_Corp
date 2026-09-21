@@ -32,14 +32,30 @@ async function bootstrap() {
   const registrar = (plugin: unknown, opciones?: unknown) =>
     app.register(plugin as PluginFastify, opciones as never);
 
+  // Esto es una API que sólo devuelve JSON: nunca sirve HTML, scripts ni
+  // estilos. Por eso la política puede ser la más restrictiva que existe —
+  // 'none' para todo— en vez de la lista permisiva que haría falta en una web.
+  // frame-ancestors 'none' evita el clickjacking incluso si algún día se
+  // devolviera una página de error en HTML.
   await registrar(fastifyHelmet, {
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        "default-src": ["'none'"],
+        "frame-ancestors": ["'none'"],
+        "base-uri": ["'none'"],
+        "form-action": ["'none'"],
+      },
+    },
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    referrerPolicy: { policy: "no-referrer" },
   });
   await registrar(fastifyCookie, { secret: config.get<string>("COOKIE_SECRET") });
   await registrar(fastifyMultipart, { limits: { fileSize: bodyLimit } });
   await registrar(fastifyCors, {
-    origin: (config.get<string>("CORS_ORIGINS") ?? "http://localhost:5180").split(",").map((s) => s.trim()),
+    origin: (config.get<string>("CORS_ORIGINS") ?? "http://localhost:5180")
+      .split(",")
+      .map((s) => s.trim()),
     credentials: true,
   });
 

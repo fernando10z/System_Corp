@@ -22,7 +22,8 @@ export class CerrarOtDto {
 }
 
 export class ReabrirOtDto {
-  @IsString() @MinLength(10, { message: "La reapertura exige un motivo de al menos 10 caracteres" })
+  @IsString()
+  @MinLength(10, { message: "La reapertura exige un motivo de al menos 10 caracteres" })
   motivoTexto!: string;
 
   @IsOptional() @IsIn(["en_trabajo", "en_diagnostico"]) estadoRetorno?: string;

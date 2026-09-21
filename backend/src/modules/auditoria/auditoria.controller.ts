@@ -27,8 +27,10 @@ export class AuditoriaController {
     @Query("pageSize") pageSize?: string,
   ) {
     const r = await this.auditoria.listar(
-      u, { entidad, entidadId, actorId, accion, desde, hasta },
-      page ? Number(page) : 1, pageSize ? Number(pageSize) : 50,
+      u,
+      { entidad, entidadId, actorId, accion, desde, hasta },
+      page ? Number(page) : 1,
+      pageSize ? Number(pageSize) : 50,
     );
     return { ok: true, data: r?.data ?? [], meta: r?.meta };
   }

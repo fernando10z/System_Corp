@@ -37,8 +37,18 @@ export class OtController {
     const r = await this.ot.listar(
       u,
       {
-        buscar, estado, estadoAdministrativo, sucursalId, empresaRucId, areaId,
-        prioridadTecnica, tipoTrabajoId, responsableId, desde, hasta, otPadreId,
+        buscar,
+        estado,
+        estadoAdministrativo,
+        sucursalId,
+        empresaRucId,
+        areaId,
+        prioridadTecnica,
+        tipoTrabajoId,
+        responsableId,
+        desde,
+        hasta,
+        otPadreId,
         soloEmergencias: soloEmergencias === undefined ? undefined : soloEmergencias === "true",
         soloPrincipales: soloPrincipales === "true" ? true : undefined,
       },
@@ -60,7 +70,10 @@ export class OtController {
     @CurrentUser() u: JwtPayload,
     @Body() body: { criterio: Record<string, unknown>; limite?: number },
   ) {
-    return { ok: true, data: await this.ot.buscarEnTrazabilidad(u, body.criterio ?? {}, body.limite) };
+    return {
+      ok: true,
+      data: await this.ot.buscarEnTrazabilidad(u, body.criterio ?? {}, body.limite),
+    };
   }
 
   @Get(":id")
@@ -75,7 +88,10 @@ export class OtController {
     @Param("id", ParseUUIDPipe) id: string,
     @Query("profundidad") profundidad?: string,
   ) {
-    return { ok: true, data: await this.ot.trazabilidad(u, id, profundidad ? Number(profundidad) : 10) };
+    return {
+      ok: true,
+      data: await this.ot.trazabilidad(u, id, profundidad ? Number(profundidad) : 10),
+    };
   }
 
   @Get(":id/jerarquia")
@@ -121,7 +137,10 @@ export class OtController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: CambiarEstadoDto,
   ) {
-    return { ok: true, data: await this.ot.cambiarEstado(u, id, dto.estado, dto.motivo, dto.motivoId) };
+    return {
+      ok: true,
+      data: await this.ot.cambiarEstado(u, id, dto.estado, dto.motivo, dto.motivoId),
+    };
   }
 
   /**
@@ -137,7 +156,11 @@ export class OtController {
     @Body() dto: CancelarOtDto,
   ) {
     return this.ot.cancelar(
-      u, id, dto.motivoId ?? null, dto.observacion, dto.tratamientoDerivadas ?? "bloquear",
+      u,
+      id,
+      dto.motivoId ?? null,
+      dto.observacion,
+      dto.tratamientoDerivadas ?? "bloquear",
     );
   }
 

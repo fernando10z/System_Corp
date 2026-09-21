@@ -44,7 +44,10 @@ export class AuthService {
         audience: this.config.get<string>("JWT_AUDIENCE"),
       });
     } catch {
-      throw new UnauthorizedException({ code: "UNAUTHORIZED", message: "Refresh token inválido o expirado" });
+      throw new UnauthorizedException({
+        code: "UNAUTHORIZED",
+        message: "Refresh token inválido o expirado",
+      });
     }
 
     // La firma es válida, pero la sesión pudo revocarse (logout, cambio de
@@ -94,7 +97,13 @@ export class AuthService {
       expiresIn: this.config.get<string>("JWT_ACCESS_TTL") ?? "15m",
     });
     const refreshToken = await this.jwt.signAsync(
-      { sub: base.sub, email: base.email, tenant_id: base.tenant_id, is_super_admin: base.is_super_admin, jti },
+      {
+        sub: base.sub,
+        email: base.email,
+        tenant_id: base.tenant_id,
+        is_super_admin: base.is_super_admin,
+        jti,
+      },
       {
         ...comun,
         secret: this.config.get<string>("JWT_REFRESH_SECRET"),
@@ -102,7 +111,11 @@ export class AuthService {
       },
     );
 
-    await this.redis.guardarRefresh(jti, perfil.id, this.segundosDeTtl(this.config.get<string>("JWT_REFRESH_TTL") ?? "7d"));
+    await this.redis.guardarRefresh(
+      jti,
+      perfil.id,
+      this.segundosDeTtl(this.config.get<string>("JWT_REFRESH_TTL") ?? "7d"),
+    );
     return { accessToken, refreshToken };
   }
 

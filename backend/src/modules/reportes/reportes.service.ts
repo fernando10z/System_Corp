@@ -9,5 +9,7 @@ export class ReportesService {
   private ctx(u: JwtPayload): SpContext {
     return { userId: u.sub, tenantId: u.tenant_id, isSuperAdmin: u.is_super_admin };
   }
-  ot(u: JwtPayload, f: Record<string, unknown>, limite?: number) { return this.repo.ot(this.ctx(u), f, limite); }
+  ot(u: JwtPayload, f: Record<string, unknown>, limite?: number) {
+    return this.repo.ot(this.ctx(u), f, limite);
+  }
 }

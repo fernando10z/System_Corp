@@ -16,8 +16,7 @@ import { SpExecutorService } from "./sp-executor.service";
           connectionString: config.get<string>("DATABASE_URL"),
           min: Number(config.get("DATABASE_POOL_MIN") ?? 2),
           max: Number(config.get("DATABASE_POOL_MAX") ?? 10),
-          ssl:
-            config.get("DATABASE_SSL") === "true" ? { rejectUnauthorized: false } : false,
+          ssl: config.get("DATABASE_SSL") === "true" ? { rejectUnauthorized: false } : false,
           // El schema `app` es la única superficie; fijarlo aquí evita depender
           // del search_path por defecto del rol.
           options: "-c search_path=app,public",

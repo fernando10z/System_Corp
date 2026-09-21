@@ -17,7 +17,10 @@ export class HealthController {
   @Get()
   async check() {
     const [bd, redis, almacen] = await Promise.all([
-      this.pool.query("SELECT 1").then(() => true).catch(() => false),
+      this.pool
+        .query("SELECT 1")
+        .then(() => true)
+        .catch(() => false),
       this.redis.ping(),
       this.storage.disponible(),
     ]);

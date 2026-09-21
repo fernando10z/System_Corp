@@ -29,8 +29,14 @@ export class CostosController {
     return {
       ok: true,
       data: await this.costos.historico(u, {
-        tipoTrabajoId, empresaRucId, sucursalId, areaId, proveedorId,
-        moneda: moneda ?? "PEN", desde, hasta,
+        tipoTrabajoId,
+        empresaRucId,
+        sucursalId,
+        areaId,
+        proveedorId,
+        moneda: moneda ?? "PEN",
+        desde,
+        hasta,
         incluirOutliers: incluirOutliers === "true" ? true : undefined,
       }),
     };

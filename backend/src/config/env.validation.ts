@@ -1,5 +1,12 @@
 import { plainToInstance } from "class-transformer";
-import { IsIn, IsNumberString, IsOptional, IsString, MinLength, validateSync } from "class-validator";
+import {
+  IsIn,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  MinLength,
+  validateSync,
+} from "class-validator";
 
 /**
  * Se ejecuta al arrancar. Si algo falta o es demasiado corto, el proceso NO

@@ -18,13 +18,19 @@ export class SolicitudesController {
     @Query("areaId") areaId?: string,
     @Query("mias") mias?: string,
     @Query("pendientesRevision") pendientesRevision?: string,
+    @Query("desde") desde?: string,
+    @Query("hasta") hasta?: string,
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
   ) {
     const r = await this.solicitudes.listar(
       u,
       {
-        buscar, estado, areaId,
+        desde,
+        hasta,
+        buscar,
+        estado,
+        areaId,
         mias: mias === "true" ? true : undefined,
         pendientesRevision: pendientesRevision === "true" ? true : undefined,
       },

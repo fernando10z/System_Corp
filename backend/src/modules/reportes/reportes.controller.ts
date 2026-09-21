@@ -29,8 +29,15 @@ export class ReportesController {
     const r = await this.reportes.ot(
       u,
       {
-        desde, hasta, sucursalId, empresaRucId, areaId, estado,
-        prioridadTecnica, tipoTrabajoId, responsableId,
+        desde,
+        hasta,
+        sucursalId,
+        empresaRucId,
+        areaId,
+        estado,
+        prioridadTecnica,
+        tipoTrabajoId,
+        responsableId,
         emergencia: emergencia === undefined ? undefined : emergencia === "true",
       },
       limite ? Number(limite) : 5000,

@@ -3,7 +3,8 @@ import { IsIn, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
 export class CancelarOtDto {
   @IsOptional() @IsUUID() motivoId?: string;
 
-  @IsString() @MinLength(10, { message: "La cancelación exige una observación de al menos 10 caracteres" })
+  @IsString()
+  @MinLength(10, { message: "La cancelación exige una observación de al menos 10 caracteres" })
   observacion!: string;
 
   /**
@@ -12,6 +13,7 @@ export class CancelarOtDto {
    *   cancelar     · cancelarlas en cascada, cada una con su motivo
    *   independizar · mantenerlas vivas, dejando constancia en la auditoría
    */
-  @IsOptional() @IsIn(["bloquear", "cancelar", "independizar"])
+  @IsOptional()
+  @IsIn(["bloquear", "cancelar", "independizar"])
   tratamientoDerivadas?: string;
 }

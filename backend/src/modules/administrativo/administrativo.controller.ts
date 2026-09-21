@@ -4,7 +4,11 @@ import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { JwtPayload } from "../../common/types/jwt-payload.type";
 import {
-  AnularSolpedDto, NumeroSapDto, PrepararSolpedDto, RegistrarLiberacionDto, RegistrarOcDto,
+  AnularSolpedDto,
+  NumeroSapDto,
+  PrepararSolpedDto,
+  RegistrarLiberacionDto,
+  RegistrarOcDto,
 } from "./dto/administrativo.dto";
 
 @Controller()

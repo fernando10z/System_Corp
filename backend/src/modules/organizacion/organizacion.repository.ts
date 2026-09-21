@@ -12,20 +12,38 @@ export class OrganizacionRepository {
   }
   crearSucursal(ctx: SpContext, codigo: string, nombre: string, direccion?: string) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_sucursal_crear", ctx, [
-      codigo, nombre, direccion ?? null,
+      codigo,
+      nombre,
+      direccion ?? null,
     ]);
   }
-  crearEmpresaRuc(ctx: SpContext, ruc: string, razonSocial: string, nombreCorto?: string, sucursalIds?: string[]) {
+  crearEmpresaRuc(
+    ctx: SpContext,
+    ruc: string,
+    razonSocial: string,
+    nombreCorto?: string,
+    sucursalIds?: string[],
+  ) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_empresa_ruc_crear", ctx, [
-      ruc, razonSocial, nombreCorto ?? null, sucursalIds ?? null,
+      ruc,
+      razonSocial,
+      nombreCorto ?? null,
+      sucursalIds ?? null,
     ]);
   }
   /** Devuelve una alerta si quedan OT abiertas bajo esa RUC (Anexo C, QA-24). */
   inactivarEmpresaRuc(ctx: SpContext, id: string, motivo: string) {
-    return this.sp.callCtx<Record<string, unknown>>("app.sp_empresa_ruc_inactivar", ctx, [id, motivo]);
+    return this.sp.callCtx<Record<string, unknown>>("app.sp_empresa_ruc_inactivar", ctx, [
+      id,
+      motivo,
+    ]);
   }
   crearArea(ctx: SpContext, empresaRucId: string, codigo: string, nombre: string) {
-    return this.sp.callCtx<Record<string, unknown>>("app.sp_area_crear", ctx, [empresaRucId, codigo, nombre]);
+    return this.sp.callCtx<Record<string, unknown>>("app.sp_area_crear", ctx, [
+      empresaRucId,
+      codigo,
+      nombre,
+    ]);
   }
   listarAreas(ctx: SpContext, filtros: Record<string, unknown>) {
     return this.sp.callCtx<unknown[]>("app.fn_area_listar", ctx, [filtrosArg(filtros)]);

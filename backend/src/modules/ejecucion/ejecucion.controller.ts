@@ -4,8 +4,12 @@ import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { JwtPayload } from "../../common/types/jwt-payload.type";
 import {
-  DeclararTrabajoDto, IniciarEjecucionDto, PausarDto, ReanudarDto,
-  RegistrarAvanceDto, RegistrarIncidenciaDto,
+  DeclararTrabajoDto,
+  IniciarEjecucionDto,
+  PausarDto,
+  ReanudarDto,
+  RegistrarAvanceDto,
+  RegistrarIncidenciaDto,
 } from "./dto/ejecucion.dto";
 
 @Controller("ot/:otId")

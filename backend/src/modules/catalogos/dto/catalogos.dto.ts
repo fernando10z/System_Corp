@@ -1,4 +1,13 @@
-import { IsBoolean, IsEmail, IsInt, IsOptional, IsString, IsUUID, Length, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsEmail,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  MinLength,
+} from "class-validator";
 
 export class CrearItemCatalogoDto {
   @IsString() tipo!: string;

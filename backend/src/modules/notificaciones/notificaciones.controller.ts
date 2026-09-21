@@ -13,7 +13,11 @@ export class NotificacionesController {
     @Query("soloNoLeidas") soloNoLeidas?: string,
     @Query("limite") limite?: string,
   ) {
-    const r = await this.notificaciones.listar(u, soloNoLeidas === "true", limite ? Number(limite) : 50);
+    const r = await this.notificaciones.listar(
+      u,
+      soloNoLeidas === "true",
+      limite ? Number(limite) : 50,
+    );
     return { ok: true, data: r?.data ?? [], meta: r?.meta };
   }
 

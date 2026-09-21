@@ -71,7 +71,11 @@ export class SpExecutorService {
    * endpoint necesita interpretar ese "no ok" (cerrar una OT con pendiente,
    * cancelar con derivadas activas). Para listados use `callCtxPaginado`.
    */
-  callCtxRaw<T = unknown>(fnName: string, ctx: SpContext, args: unknown[] = []): Promise<SpResult<T>> {
+  callCtxRaw<T = unknown>(
+    fnName: string,
+    ctx: SpContext,
+    args: unknown[] = [],
+  ): Promise<SpResult<T>> {
     return this.callRaw<T>(fnName, [ctx.userId, ctx.tenantId, ctx.isSuperAdmin, ...args]);
   }
 
@@ -87,7 +91,12 @@ export class SpExecutorService {
     ctx: SpContext,
     args: unknown[] = [],
   ): Promise<{ data: T[]; meta?: Record<string, unknown> }> {
-    const row = await this.callRaw<T[]>(fnName, [ctx.userId, ctx.tenantId, ctx.isSuperAdmin, ...args]);
+    const row = await this.callRaw<T[]>(fnName, [
+      ctx.userId,
+      ctx.tenantId,
+      ctx.isSuperAdmin,
+      ...args,
+    ]);
 
     if (!row.ok) {
       const code = row.error?.code ?? "BUSINESS_RULE";

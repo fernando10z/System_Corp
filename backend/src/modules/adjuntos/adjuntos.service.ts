@@ -46,10 +46,16 @@ export class AdjuntosService {
   async subir(
     u: JwtPayload,
     archivo: { buffer: Buffer; filename: string; mimetype?: string },
-    meta: Omit<RegistrarAdjuntoArgs, "storageKey" | "nombre" | "tipo" | "tamanoBytes" | "mimeType" | "checksum">,
+    meta: Omit<
+      RegistrarAdjuntoArgs,
+      "storageKey" | "nombre" | "tipo" | "tamanoBytes" | "mimeType" | "checksum"
+    >,
   ) {
     if (!archivo?.buffer?.length) {
-      throw new BadRequestException({ code: "VALIDATION", message: "No se recibió ningún archivo" });
+      throw new BadRequestException({
+        code: "VALIDATION",
+        message: "No se recibió ningún archivo",
+      });
     }
 
     const tenantId = u.tenant_id ?? "sin-tenant";
@@ -76,9 +82,22 @@ export class AdjuntosService {
     return this.repo.listar(this.ctx(u), entidadTipo, entidadId, otId);
   }
 
-  /** URL temporal: el almacén nunca se expone directamente al navegador. */
-  urlDescarga(storageKey: string) {
-    return this.storage.urlDescarga(storageKey);
+  /**
+   * URL temporal: el almacén nunca se expone directamente al navegador y la
+   * clave del objeto tampoco. La base resuelve el id y comprueba el tenant; si
+   * el adjunto no es visible, ni se llega a firmar nada.
+   */
+  async urlDescarga(u: JwtPayload, adjuntoId: string) {
+    const a = (await this.repo.obtener(this.ctx(u), adjuntoId)) as {
+      nombre?: string;
+      mime?: string;
+      storage_key?: string;
+    };
+    return {
+      nombre: a.nombre,
+      mime: a.mime,
+      url: await this.storage.urlDescarga(String(a.storage_key)),
+    };
   }
 
   retirar(u: JwtPayload, id: string, motivo: string) {

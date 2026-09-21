@@ -12,13 +12,20 @@ export class DiagnosticosRepository {
   }
   registrar(ctx: SpContext, otId: string, d: RegistrarDiagnosticoDto) {
     return this.sp.callCtx<{ id: string; version: number }>("app.sp_diagnostico_registrar", ctx, [
-      otId, d.diagnostico, d.causaProbable, d.alcance, d.trabajoARealizar,
-      d.observaciones ?? null, d.lecturasInstrumentos ?? null, d.motivoCambio ?? null,
+      otId,
+      d.diagnostico,
+      d.causaProbable,
+      d.alcance,
+      d.trabajoARealizar,
+      d.observaciones ?? null,
+      d.lecturasInstrumentos ?? null,
+      d.motivoCambio ?? null,
     ]);
   }
   aprobar(ctx: SpContext, diagnosticoId: string, observacion?: string) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_diagnostico_aprobar", ctx, [
-      diagnosticoId, observacion ?? null,
+      diagnosticoId,
+      observacion ?? null,
     ]);
   }
 }

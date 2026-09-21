@@ -1,4 +1,12 @@
-import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
 /**
  * Lo que se le pide al solicitante y NADA MÁS.
@@ -14,7 +22,8 @@ export class CrearSolicitudDto {
   @MaxLength(180, { message: "El título no puede superar los 180 caracteres" })
   titulo!: string;
 
-  @IsString() @MinLength(10, { message: "Describa la necesidad con al menos 10 caracteres" })
+  @IsString()
+  @MinLength(10, { message: "Describa la necesidad con al menos 10 caracteres" })
   descripcion!: string;
 
   /** Referencia libre: el solicitante puede no conocer la ubicación técnica. */

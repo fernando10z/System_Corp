@@ -27,6 +27,9 @@ export class DashboardsController {
     @Query("empresaRucId") empresaRucId?: string,
     @Query("areaId") areaId?: string,
   ) {
-    return { ok: true, data: await this.dashboards.kpis(u, { desde, hasta, sucursalId, empresaRucId, areaId }) };
+    return {
+      ok: true,
+      data: await this.dashboards.kpis(u, { desde, hasta, sucursalId, empresaRucId, areaId }),
+    };
   }
 }

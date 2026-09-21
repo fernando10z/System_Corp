@@ -11,30 +11,71 @@ export class CatalogosRepository {
   listar(ctx: SpContext, tipo?: string) {
     return this.sp.callCtx<Record<string, unknown>>("app.fn_catalogo_listar", ctx, [tipo ?? null]);
   }
-  crearItem(ctx: SpContext, a: {
-    tipo: string; codigo: string; nombre: string;
-    descripcion?: string; orden?: number; requiereComentario?: boolean;
-  }) {
+  crearItem(
+    ctx: SpContext,
+    a: {
+      tipo: string;
+      codigo: string;
+      nombre: string;
+      descripcion?: string;
+      orden?: number;
+      requiereComentario?: boolean;
+    },
+  ) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_catalogo_item_crear", ctx, [
-      a.tipo, a.codigo, a.nombre, a.descripcion ?? null, a.orden ?? 0, a.requiereComentario ?? false,
+      a.tipo,
+      a.codigo,
+      a.nombre,
+      a.descripcion ?? null,
+      a.orden ?? 0,
+      a.requiereComentario ?? false,
     ]);
   }
   tiposTrabajo(ctx: SpContext) {
     return this.sp.callCtx<unknown[]>("app.fn_tipo_trabajo_listar", ctx, []);
   }
-  crearTipoTrabajo(ctx: SpContext, codigo: string, nombre: string, padreId?: string, descripcion?: string) {
+  crearTipoTrabajo(
+    ctx: SpContext,
+    codigo: string,
+    nombre: string,
+    padreId?: string,
+    descripcion?: string,
+  ) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_tipo_trabajo_crear", ctx, [
-      codigo, nombre, padreId ?? null, descripcion ?? null,
+      codigo,
+      nombre,
+      padreId ?? null,
+      descripcion ?? null,
     ]);
   }
-  proveedores(ctx: SpContext, f: Record<string, unknown>, page: number, pageSize: number): Promise<{ data: unknown[]; meta?: Record<string, unknown> }> {
-    return this.sp.callCtxPaginado<unknown>("app.fn_proveedor_listar", ctx, [filtrosArg(f), page, pageSize]);
+  proveedores(
+    ctx: SpContext,
+    f: Record<string, unknown>,
+    page: number,
+    pageSize: number,
+  ): Promise<{ data: unknown[]; meta?: Record<string, unknown> }> {
+    return this.sp.callCtxPaginado<unknown>("app.fn_proveedor_listar", ctx, [
+      filtrosArg(f),
+      page,
+      pageSize,
+    ]);
   }
-  crearProveedor(ctx: SpContext, a: {
-    razonSocial: string; ruc?: string; contacto?: string; telefono?: string; email?: string;
-  }) {
+  crearProveedor(
+    ctx: SpContext,
+    a: {
+      razonSocial: string;
+      ruc?: string;
+      contacto?: string;
+      telefono?: string;
+      email?: string;
+    },
+  ) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_proveedor_crear", ctx, [
-      a.razonSocial, a.ruc ?? null, a.contacto ?? null, a.telefono ?? null, a.email ?? null,
+      a.razonSocial,
+      a.ruc ?? null,
+      a.contacto ?? null,
+      a.telefono ?? null,
+      a.email ?? null,
     ]);
   }
 }

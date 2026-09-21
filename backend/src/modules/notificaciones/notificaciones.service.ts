@@ -20,8 +20,12 @@ export class NotificacionesService {
   listar(u: JwtPayload, soloNoLeidas: boolean, limite: number) {
     return this.repo.listar(this.ctx(u), soloNoLeidas, limite);
   }
-  marcarLeida(u: JwtPayload, id?: string) { return this.repo.marcarLeida(this.ctx(u), id); }
-  sla(u: JwtPayload) { return this.repo.sla(this.ctx(u)); }
+  marcarLeida(u: JwtPayload, id?: string) {
+    return this.repo.marcarLeida(this.ctx(u), id);
+  }
+  sla(u: JwtPayload) {
+    return this.repo.sla(this.ctx(u));
+  }
 
   /**
    * Vacía la cola de correo pendiente.
@@ -43,10 +47,12 @@ export class NotificacionesService {
         [n.cuerpo, n.ot_numero ? `\nOT: ${n.ot_numero}` : ""].filter(Boolean).join("\n"),
       );
       await this.repo.marcarEnviada(ctx, String(n.id), r.ok, r.error);
-      r.ok ? enviados++ : fallidos++;
+      if (r.ok) enviados++;
+      else fallidos++;
     }
 
-    if (fallidos) this.logger.warn(`${fallidos} correo(s) no pudieron entregarse; quedan registrados.`);
+    if (fallidos)
+      this.logger.warn(`${fallidos} correo(s) no pudieron entregarse; quedan registrados.`);
     return { pendientes: pendientes.length, enviados, fallidos };
   }
 }

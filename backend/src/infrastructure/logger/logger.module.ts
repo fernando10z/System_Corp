@@ -15,13 +15,21 @@ import { randomUUID } from "node:crypto";
           return { userId: u?.sub, tenantId: u?.tenant_id };
         },
         redact: {
-          paths: ["req.headers.authorization", "req.headers.cookie", "req.body.password",
-                  "req.body.passwordNueva", "req.body.passwordActual"],
+          paths: [
+            "req.headers.authorization",
+            "req.headers.cookie",
+            "req.body.password",
+            "req.body.passwordNueva",
+            "req.body.passwordActual",
+          ],
           remove: true,
         },
         transport:
           process.env.LOG_PRETTY === "true"
-            ? { target: "pino-pretty", options: { singleLine: true, translateTime: "SYS:HH:MM:ss" } }
+            ? {
+                target: "pino-pretty",
+                options: { singleLine: true, translateTime: "SYS:HH:MM:ss" },
+              }
             : undefined,
       },
     }),

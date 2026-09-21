@@ -24,7 +24,10 @@ export class JwtAuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const header = req.headers.authorization;
     if (!header?.startsWith("Bearer ")) {
-      throw new UnauthorizedException({ code: "UNAUTHORIZED", message: "Falta el token de acceso" });
+      throw new UnauthorizedException({
+        code: "UNAUTHORIZED",
+        message: "Falta el token de acceso",
+      });
     }
 
     try {
@@ -35,7 +38,10 @@ export class JwtAuthGuard implements CanActivate {
       });
       return true;
     } catch {
-      throw new UnauthorizedException({ code: "UNAUTHORIZED", message: "Token inválido o expirado" });
+      throw new UnauthorizedException({
+        code: "UNAUTHORIZED",
+        message: "Token inválido o expirado",
+      });
     }
   }
 }

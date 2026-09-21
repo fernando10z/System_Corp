@@ -22,21 +22,41 @@ export class OtService {
   listar(u: JwtPayload, filtros: Record<string, unknown>, page: number, pageSize: number) {
     return this.repo.listar(this.ctx(u), filtros, page, pageSize);
   }
-  obtener(u: JwtPayload, id: string) { return this.repo.obtener(this.ctx(u), id); }
-  trazabilidad(u: JwtPayload, id: string, prof?: number) { return this.repo.trazabilidad(this.ctx(u), id, prof); }
-  jerarquia(u: JwtPayload, id: string) { return this.repo.jerarquia(this.ctx(u), id); }
-  consolidado(u: JwtPayload, id: string) { return this.repo.consolidado(this.ctx(u), id); }
-  lineaTiempo(u: JwtPayload, id: string) { return this.repo.lineaTiempo(this.ctx(u), id); }
-  historial(u: JwtPayload, id: string) { return this.repo.historial(this.ctx(u), id); }
+  obtener(u: JwtPayload, id: string) {
+    return this.repo.obtener(this.ctx(u), id);
+  }
+  trazabilidad(u: JwtPayload, id: string, prof?: number) {
+    return this.repo.trazabilidad(this.ctx(u), id, prof);
+  }
+  jerarquia(u: JwtPayload, id: string) {
+    return this.repo.jerarquia(this.ctx(u), id);
+  }
+  consolidado(u: JwtPayload, id: string) {
+    return this.repo.consolidado(this.ctx(u), id);
+  }
+  lineaTiempo(u: JwtPayload, id: string) {
+    return this.repo.lineaTiempo(this.ctx(u), id);
+  }
+  historial(u: JwtPayload, id: string) {
+    return this.repo.historial(this.ctx(u), id);
+  }
 
-  crearDesdeSolicitud(u: JwtPayload, dto: CrearOtDto) { return this.repo.crearDesdeSolicitud(this.ctx(u), dto); }
+  crearDesdeSolicitud(u: JwtPayload, dto: CrearOtDto) {
+    return this.repo.crearDesdeSolicitud(this.ctx(u), dto);
+  }
   crearDerivada(u: JwtPayload, padreId: string, dto: CrearDerivadaDto) {
     return this.repo.crearDerivada(this.ctx(u), padreId, dto);
   }
   cambiarEstado(u: JwtPayload, id: string, estado: string, motivo?: string, motivoId?: string) {
     return this.repo.cambiarEstado(this.ctx(u), id, estado, motivo, motivoId);
   }
-  cancelar(u: JwtPayload, id: string, motivoId: string | null, observacion: string, tratamiento: string) {
+  cancelar(
+    u: JwtPayload,
+    id: string,
+    motivoId: string | null,
+    observacion: string,
+    tratamiento: string,
+  ) {
     return this.repo.cancelar(this.ctx(u), id, motivoId, observacion, tratamiento);
   }
   cambiarPrioridad(u: JwtPayload, id: string, prioridad: string, motivo?: string) {

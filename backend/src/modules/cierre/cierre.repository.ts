@@ -1,7 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { SpExecutorService } from "../../infrastructure/database/sp-executor.service";
 import type { SpContext, SpResult } from "../../common/types/sp-result.type";
-import type { CerrarOtDto, ConformidadDto, ReabrirOtDto, RevisarTrabajoDto } from "./dto/cierre.dto";
+import type {
+  CerrarOtDto,
+  ConformidadDto,
+  ReabrirOtDto,
+  RevisarTrabajoDto,
+} from "./dto/cierre.dto";
 
 @Injectable()
 export class CierreRepository {
@@ -9,12 +14,16 @@ export class CierreRepository {
 
   revisar(ctx: SpContext, otId: string, d: RevisarTrabajoDto) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_trabajo_revisar", ctx, [
-      otId, d.resultado, d.observacion ?? null,
+      otId,
+      d.resultado,
+      d.observacion ?? null,
     ]);
   }
   conformidad(ctx: SpContext, otId: string, d: ConformidadDto) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_conformidad_registrar", ctx, [
-      otId, d.conformidad, d.comentario ?? null,
+      otId,
+      d.conformidad,
+      d.comentario ?? null,
     ]);
   }
   /**
@@ -24,12 +33,17 @@ export class CierreRepository {
    */
   cerrar(ctx: SpContext, otId: string, d: CerrarOtDto): Promise<SpResult<Record<string, unknown>>> {
     return this.sp.callCtxRaw<Record<string, unknown>>("app.sp_ot_cerrar", ctx, [
-      otId, d.adminRevisado ?? false, d.observacionPendiente ?? null,
+      otId,
+      d.adminRevisado ?? false,
+      d.observacionPendiente ?? null,
     ]);
   }
   reabrir(ctx: SpContext, otId: string, d: ReabrirOtDto) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_ot_reabrir", ctx, [
-      otId, d.motivoTexto, d.estadoRetorno ?? "en_trabajo", d.motivoId ?? null,
+      otId,
+      d.motivoTexto,
+      d.estadoRetorno ?? "en_trabajo",
+      d.motivoId ?? null,
     ]);
   }
 }

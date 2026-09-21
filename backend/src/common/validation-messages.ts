@@ -13,8 +13,14 @@ const PLANTILLAS: Array<[RegExp, (campo: string, m: RegExpMatchArray) => string]
   [/must be a UUID/, (c) => `${c} no es un identificador válido`],
   [/must be an email/, (c) => `${c} no es un correo válido`],
   [/must be a valid ISO 8601 date/, (c) => `${c} no es una fecha válida`],
-  [/must be longer than or equal to (\d+)/, (c, m) => `${c} debe tener al menos ${m[1]} caracteres`],
-  [/must be shorter than or equal to (\d+)/, (c, m) => `${c} no puede superar los ${m[1]} caracteres`],
+  [
+    /must be longer than or equal to (\d+)/,
+    (c, m) => `${c} debe tener al menos ${m[1]} caracteres`,
+  ],
+  [
+    /must be shorter than or equal to (\d+)/,
+    (c, m) => `${c} no puede superar los ${m[1]} caracteres`,
+  ],
   [/must not be less than (\d+)/, (c, m) => `${c} no puede ser menor que ${m[1]}`],
   [/must not be greater than (\d+)/, (c, m) => `${c} no puede ser mayor que ${m[1]}`],
   [/must be one of the following values: (.+)/, (c, m) => `${c} debe ser uno de: ${m[1]}`],

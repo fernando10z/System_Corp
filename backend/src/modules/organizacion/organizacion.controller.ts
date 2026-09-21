@@ -3,7 +3,12 @@ import { OrganizacionService } from "./organizacion.service";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { JwtPayload } from "../../common/types/jwt-payload.type";
-import { CrearAreaDto, CrearEmpresaRucDto, CrearSucursalDto, InactivarDto } from "./dto/organizacion.dto";
+import {
+  CrearAreaDto,
+  CrearEmpresaRucDto,
+  CrearSucursalDto,
+  InactivarDto,
+} from "./dto/organizacion.dto";
 
 @Controller("organizacion")
 export class OrganizacionController {
@@ -23,7 +28,10 @@ export class OrganizacionController {
   @Roles("administrador")
   @Post("sucursales")
   async crearSucursal(@CurrentUser() u: JwtPayload, @Body() dto: CrearSucursalDto) {
-    return { ok: true, data: await this.org.crearSucursal(u, dto.codigo, dto.nombre, dto.direccion) };
+    return {
+      ok: true,
+      data: await this.org.crearSucursal(u, dto.codigo, dto.nombre, dto.direccion),
+    };
   }
 
   @Roles("administrador")
@@ -31,7 +39,13 @@ export class OrganizacionController {
   async crearEmpresa(@CurrentUser() u: JwtPayload, @Body() dto: CrearEmpresaRucDto) {
     return {
       ok: true,
-      data: await this.org.crearEmpresaRuc(u, dto.ruc, dto.razonSocial, dto.nombreCorto, dto.sucursalIds),
+      data: await this.org.crearEmpresaRuc(
+        u,
+        dto.ruc,
+        dto.razonSocial,
+        dto.nombreCorto,
+        dto.sucursalIds,
+      ),
     };
   }
 
@@ -48,6 +62,9 @@ export class OrganizacionController {
   @Roles("administrador")
   @Post("areas")
   async crearArea(@CurrentUser() u: JwtPayload, @Body() dto: CrearAreaDto) {
-    return { ok: true, data: await this.org.crearArea(u, dto.empresaRucId, dto.codigo, dto.nombre) };
+    return {
+      ok: true,
+      data: await this.org.crearArea(u, dto.empresaRucId, dto.codigo, dto.nombre),
+    };
   }
 }

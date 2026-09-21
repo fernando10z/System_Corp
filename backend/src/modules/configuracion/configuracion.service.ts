@@ -9,7 +9,9 @@ export class ConfiguracionService {
   private ctx(u: JwtPayload): SpContext {
     return { userId: u.sub, tenantId: u.tenant_id, isSuperAdmin: u.is_super_admin };
   }
-  obtener(u: JwtPayload) { return this.repo.obtener(this.ctx(u)); }
+  obtener(u: JwtPayload) {
+    return this.repo.obtener(this.ctx(u));
+  }
   guardar(u: JwtPayload, clave: string, valor: unknown, descripcion?: string) {
     return this.repo.guardar(this.ctx(u), clave, valor, descripcion);
   }

@@ -1,4 +1,14 @@
-import { IsDateString, IsIn, IsNumber, IsObject, IsOptional, IsString, IsUUID, Min, MinLength } from "class-validator";
+import {
+  IsDateString,
+  IsIn,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  MinLength,
+} from "class-validator";
 
 /**
  * El formulario de SOLPED es un objeto libre A PROPÓSITO.

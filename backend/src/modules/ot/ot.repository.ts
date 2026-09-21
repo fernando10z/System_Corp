@@ -14,8 +14,17 @@ import type { ActualizarOtDto } from "./dto/actualizar-ot.dto";
 export class OtRepository {
   constructor(private readonly sp: SpExecutorService) {}
 
-  listar(ctx: SpContext, filtros: Record<string, unknown>, page: number, pageSize: number): Promise<{ data: unknown[]; meta?: Record<string, unknown> }> {
-    return this.sp.callCtxPaginado<unknown>("app.fn_ot_listar", ctx, [filtrosArg(filtros), page, pageSize]);
+  listar(
+    ctx: SpContext,
+    filtros: Record<string, unknown>,
+    page: number,
+    pageSize: number,
+  ): Promise<{ data: unknown[]; meta?: Record<string, unknown> }> {
+    return this.sp.callCtxPaginado<unknown>("app.fn_ot_listar", ctx, [
+      filtrosArg(filtros),
+      page,
+      pageSize,
+    ]);
   }
 
   /** Devuelve el árbol de trazabilidad completo, ya podado según permisos. */
@@ -24,7 +33,10 @@ export class OtRepository {
   }
 
   trazabilidad(ctx: SpContext, otId: string, profundidad = 10) {
-    return this.sp.callCtx<Record<string, unknown>>("app.fn_ot_trazabilidad", ctx, [otId, profundidad]);
+    return this.sp.callCtx<Record<string, unknown>>("app.fn_ot_trazabilidad", ctx, [
+      otId,
+      profundidad,
+    ]);
   }
 
   jerarquia(ctx: SpContext, otId: string) {
@@ -48,10 +60,17 @@ export class OtRepository {
       "app.sp_ot_crear_desde_solicitud",
       ctx,
       [
-        d.solicitudId, d.sucursalId, d.empresaRucId, d.areaId,
-        d.tipoMantenimientoId, d.prioridadTecnica, d.coordinadorId,
-        d.esEmergencia ?? false, d.emergenciaJustificacion ?? null,
-        d.tipoTrabajoId ?? null, d.cecosId ?? null,
+        d.solicitudId,
+        d.sucursalId,
+        d.empresaRucId,
+        d.areaId,
+        d.tipoMantenimientoId,
+        d.prioridadTecnica,
+        d.coordinadorId,
+        d.esEmergencia ?? false,
+        d.emergenciaJustificacion ?? null,
+        d.tipoTrabajoId ?? null,
+        d.cecosId ?? null,
       ],
     );
   }
@@ -61,18 +80,26 @@ export class OtRepository {
       "app.sp_ot_crear_derivada",
       ctx,
       [
-        otPadreId, d.motivoDerivacion,
-        d.tipoMantenimientoId ?? null, d.tipoTrabajoId ?? null,
-        d.prioridadTecnica ?? null, d.coordinadorId ?? null,
-        d.sucursalId ?? null, d.empresaRucId ?? null, d.areaId ?? null,
-        d.esBloqueante ?? true, d.motivoDerivacionId ?? null,
+        otPadreId,
+        d.motivoDerivacion,
+        d.tipoMantenimientoId ?? null,
+        d.tipoTrabajoId ?? null,
+        d.prioridadTecnica ?? null,
+        d.coordinadorId ?? null,
+        d.sucursalId ?? null,
+        d.empresaRucId ?? null,
+        d.areaId ?? null,
+        d.esBloqueante ?? true,
+        d.motivoDerivacionId ?? null,
       ],
     );
   }
 
   cambiarEstado(ctx: SpContext, otId: string, estado: string, motivo?: string, motivoId?: string) {
     return this.sp.callCtx<{ estado: string; estado_anterior: string }>(
-      "app.sp_ot_cambiar_estado", ctx, [otId, estado, motivo ?? null, motivoId ?? null],
+      "app.sp_ot_cambiar_estado",
+      ctx,
+      [otId, estado, motivo ?? null, motivoId ?? null],
     );
   }
 
@@ -81,15 +108,26 @@ export class OtRepository {
    * tratamiento es "bloquear". Por eso se usa callCtxRaw: ese "error" es en
    * realidad una respuesta que la interfaz necesita mostrar.
    */
-  cancelar(ctx: SpContext, otId: string, motivoId: string | null, observacion: string, tratamiento: string) {
+  cancelar(
+    ctx: SpContext,
+    otId: string,
+    motivoId: string | null,
+    observacion: string,
+    tratamiento: string,
+  ) {
     return this.sp.callCtxRaw<Record<string, unknown>>("app.sp_ot_cancelar", ctx, [
-      otId, motivoId, observacion, tratamiento,
+      otId,
+      motivoId,
+      observacion,
+      tratamiento,
     ]);
   }
 
   cambiarPrioridad(ctx: SpContext, otId: string, prioridad: string, motivo?: string) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_ot_cambiar_prioridad", ctx, [
-      otId, prioridad, motivo ?? null,
+      otId,
+      prioridad,
+      motivo ?? null,
     ]);
   }
 
@@ -104,7 +142,10 @@ export class OtRepository {
     if (d.tipoTrabajoId) payload.tipo_trabajo_id = d.tipoTrabajoId;
     if (d.coordinadorId) payload.coordinador_id = d.coordinadorId;
     if (d.ejecutorId) payload.ejecutor_id = d.ejecutorId;
-    return this.sp.callCtx<Record<string, unknown>>("app.sp_ot_actualizar", ctx, [otId, jsonbArg(payload)]);
+    return this.sp.callCtx<Record<string, unknown>>("app.sp_ot_actualizar", ctx, [
+      otId,
+      jsonbArg(payload),
+    ]);
   }
 
   refrescarTrazabilidad(otId: string) {
@@ -116,6 +157,9 @@ export class OtRepository {
   }
 
   buscarEnTrazabilidad(ctx: SpContext, criterio: Record<string, unknown>, limite = 50) {
-    return this.sp.callCtx<unknown[]>("app.fn_trazabilidad_buscar", ctx, [jsonbArg(criterio), limite]);
+    return this.sp.callCtx<unknown[]>("app.fn_trazabilidad_buscar", ctx, [
+      jsonbArg(criterio),
+      limite,
+    ]);
   }
 }

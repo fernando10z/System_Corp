@@ -28,7 +28,16 @@ export class CatalogosController {
   @Roles("administrador", "coordinador")
   @Post("tipos-trabajo")
   async crearTipoTrabajo(@CurrentUser() u: JwtPayload, @Body() dto: CrearTipoTrabajoDto) {
-    return { ok: true, data: await this.catalogos.crearTipoTrabajo(u, dto.codigo, dto.nombre, dto.padreId, dto.descripcion) };
+    return {
+      ok: true,
+      data: await this.catalogos.crearTipoTrabajo(
+        u,
+        dto.codigo,
+        dto.nombre,
+        dto.padreId,
+        dto.descripcion,
+      ),
+    };
   }
 
   @Get("proveedores")
@@ -39,7 +48,10 @@ export class CatalogosController {
     @Query("pageSize") pageSize?: string,
   ) {
     const r = await this.catalogos.proveedores(
-      u, { buscar }, page ? Number(page) : 1, pageSize ? Number(pageSize) : 20,
+      u,
+      { buscar },
+      page ? Number(page) : 1,
+      pageSize ? Number(pageSize) : 20,
     );
     return { ok: true, data: r?.data ?? [], meta: r?.meta };
   }

@@ -1,4 +1,13 @@
-import { IsDateString, IsNumber, IsOptional, IsString, IsUUID, Max, Min, MinLength } from "class-validator";
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  MinLength,
+} from "class-validator";
 
 export class IniciarEjecucionDto {
   @IsUUID() responsableId!: string;

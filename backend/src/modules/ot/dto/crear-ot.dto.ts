@@ -17,7 +17,9 @@ export class CrearOtDto {
   // La justificación es obligatoria cuando esEmergencia es true. No se declara
   // con @ValidateIf porque la regla ya la hace cumplir el SP y un CHECK de la
   // tabla: mejor una sola fuente de verdad que dos que puedan divergir.
-  @IsOptional() @IsString() @MinLength(10, { message: "Justifique la emergencia con al menos 10 caracteres" })
+  @IsOptional()
+  @IsString()
+  @MinLength(10, { message: "Justifique la emergencia con al menos 10 caracteres" })
   emergenciaJustificacion?: string;
 
   @IsOptional() @IsUUID() tipoTrabajoId?: string;

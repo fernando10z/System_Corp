@@ -6,7 +6,8 @@ import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, MinLength } from "class-
  * opcional: si no se envía, se hereda del padre.
  */
 export class CrearDerivadaDto {
-  @IsString() @MinLength(10, { message: "Explique por qué se deriva, con al menos 10 caracteres" })
+  @IsString()
+  @MinLength(10, { message: "Explique por qué se deriva, con al menos 10 caracteres" })
   motivoDerivacion!: string;
 
   @IsOptional() @IsUUID() motivoDerivacionId?: string;

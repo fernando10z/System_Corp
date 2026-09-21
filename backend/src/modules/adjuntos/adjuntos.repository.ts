@@ -22,17 +22,34 @@ export class AdjuntosRepository {
 
   registrar(ctx: SpContext, a: RegistrarAdjuntoArgs) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_adjunto_registrar", ctx, [
-      a.entidadTipo, a.entidadId, a.etapa, a.tipo, a.nombre, a.storageKey,
-      a.mimeType ?? null, a.tamanoBytes ?? null, a.otId ?? null,
-      a.visibilidad ?? "canal", a.checksum ?? null,
+      a.entidadTipo,
+      a.entidadId,
+      a.etapa,
+      a.tipo,
+      a.nombre,
+      a.storageKey,
+      a.mimeType ?? null,
+      a.tamanoBytes ?? null,
+      a.otId ?? null,
+      a.visibilidad ?? "canal",
+      a.checksum ?? null,
     ]);
   }
   listar(ctx: SpContext, entidadTipo?: string, entidadId?: string, otId?: string) {
     return this.sp.callCtx<unknown[]>("app.fn_adjunto_listar", ctx, [
-      entidadTipo ?? null, entidadId ?? null, otId ?? null,
+      entidadTipo ?? null,
+      entidadId ?? null,
+      otId ?? null,
     ]);
   }
+  /** Un adjunto por id, ya acotado al tenant y al alcance por la base. */
+  obtener(ctx: SpContext, adjuntoId: string) {
+    return this.sp.callCtx<Record<string, unknown>>("app.fn_adjunto_obtener", ctx, [adjuntoId]);
+  }
   retirar(ctx: SpContext, adjuntoId: string, motivo: string) {
-    return this.sp.callCtx<Record<string, unknown>>("app.sp_adjunto_retirar", ctx, [adjuntoId, motivo]);
+    return this.sp.callCtx<Record<string, unknown>>("app.sp_adjunto_retirar", ctx, [
+      adjuntoId,
+      motivo,
+    ]);
   }
 }

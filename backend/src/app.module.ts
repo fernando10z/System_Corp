@@ -7,7 +7,14 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { join } from "node:path";
 
 import {
-  appConfig, databaseConfig, jwtConfig, mailConfig, redisConfig, sapConfig, storageConfig, validateEnv,
+  appConfig,
+  databaseConfig,
+  jwtConfig,
+  mailConfig,
+  redisConfig,
+  sapConfig,
+  storageConfig,
+  validateEnv,
 } from "./config";
 
 import { LoggerModule } from "./infrastructure/logger/logger.module";
@@ -48,7 +55,15 @@ import { ConfiguracionModule } from "./modules/configuracion/configuracion.modul
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [join(process.cwd(), ".env")],
-      load: [appConfig, databaseConfig, jwtConfig, redisConfig, storageConfig, mailConfig, sapConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        redisConfig,
+        storageConfig,
+        mailConfig,
+        sapConfig,
+      ],
       validate: validateEnv,
     }),
     JwtModule.register({ global: true }),

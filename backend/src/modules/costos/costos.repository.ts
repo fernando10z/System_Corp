@@ -10,17 +10,29 @@ export class CostosRepository {
 
   registrar(ctx: SpContext, otId: string, d: RegistrarCostoDto) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_costo_registrar", ctx, [
-      otId, d.textoOriginal, d.montoTotal, d.fuente ?? "cotizacion", d.concepto ?? null,
-      d.cantidad ?? null, d.unidad ?? null, d.moneda ?? "PEN",
-      d.cotizacionId ?? null, d.descripcionNormalizadaId ?? null,
+      otId,
+      d.textoOriginal,
+      d.montoTotal,
+      d.fuente ?? "cotizacion",
+      d.concepto ?? null,
+      d.cantidad ?? null,
+      d.unidad ?? null,
+      d.moneda ?? "PEN",
+      d.cotizacionId ?? null,
+      d.descripcionNormalizadaId ?? null,
     ]);
   }
   calificar(ctx: SpContext, costoId: string, d: CalificarCostoDto) {
     return this.sp.callCtx<Record<string, unknown>>("app.sp_costo_calificar", ctx, [
-      costoId, d.esComparable, d.esOutlier ?? false, d.justificacion ?? null,
+      costoId,
+      d.esComparable,
+      d.esOutlier ?? false,
+      d.justificacion ?? null,
     ]);
   }
   historico(ctx: SpContext, filtros: Record<string, unknown>) {
-    return this.sp.callCtx<Record<string, unknown>>("app.fn_costo_historico", ctx, [filtrosArg(filtros)]);
+    return this.sp.callCtx<Record<string, unknown>>("app.fn_costo_historico", ctx, [
+      filtrosArg(filtros),
+    ]);
   }
 }

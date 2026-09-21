@@ -3,7 +3,11 @@ import { ConversacionesService } from "./conversaciones.service";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { JwtPayload } from "../../common/types/jwt-payload.type";
-import { EditarMensajeDto, InvitarParticipanteDto, PublicarMensajeDto } from "./dto/conversaciones.dto";
+import {
+  EditarMensajeDto,
+  InvitarParticipanteDto,
+  PublicarMensajeDto,
+} from "./dto/conversaciones.dto";
 
 @Controller()
 export class ConversacionesController {

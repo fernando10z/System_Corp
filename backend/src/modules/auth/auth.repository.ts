@@ -17,6 +17,9 @@ export class AuthRepository {
   }
 
   cambiarPassword(ctx: SpContext, actual: string, nueva: string) {
-    return this.sp.callCtx<{ cambiada: boolean }>("app.sp_auth_cambiar_password", ctx, [actual, nueva]);
+    return this.sp.callCtx<{ cambiada: boolean }>("app.sp_auth_cambiar_password", ctx, [
+      actual,
+      nueva,
+    ]);
   }
 }

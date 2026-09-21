@@ -1,13 +1,24 @@
-import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, IsUUID, Min, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  MinLength,
+} from "class-validator";
 
 export class RegistrarCostoDto {
   /** Inmutable y obligatorio: no hay registros sin procedencia (cap. 32.2). */
-  @IsString() @MinLength(3, { message: "El texto original del documento es obligatorio" })
+  @IsString()
+  @MinLength(3, { message: "El texto original del documento es obligatorio" })
   textoOriginal!: string;
 
   @IsNumber() @Min(0) montoTotal!: number;
 
-  @IsOptional() @IsIn(["cotizacion", "ot_cerrada", "documento_administrativo", "carga_validada"])
+  @IsOptional()
+  @IsIn(["cotizacion", "ot_cerrada", "documento_administrativo", "carga_validada"])
   fuente?: string;
 
   @IsOptional() @IsIn(["material", "repuesto", "servicio", "trabajo_integral"]) concepto?: string;

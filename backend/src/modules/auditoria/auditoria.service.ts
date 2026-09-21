@@ -9,5 +9,7 @@ export class AuditoriaService {
   private ctx(u: JwtPayload): SpContext {
     return { userId: u.sub, tenantId: u.tenant_id, isSuperAdmin: u.is_super_admin };
   }
-  listar(u: JwtPayload, f: Record<string, unknown>, p: number, s: number) { return this.repo.listar(this.ctx(u), f, p, s); }
+  listar(u: JwtPayload, f: Record<string, unknown>, p: number, s: number) {
+    return this.repo.listar(this.ctx(u), f, p, s);
+  }
 }
