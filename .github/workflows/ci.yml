@@ -1,0 +1,147 @@
+# =============================================================================
+# MIP · integración continua
+#
+# Levanta la pila real —Postgres y Redis de verdad, no dobles— aplica las
+# migraciones, arranca la API y pasa la misma suite que se ejecuta en local.
+# Es deliberado: toda la lógica de negocio vive en stored procedures, así que
+# una prueba contra una base simulada no probaría el producto.
+#
+# Si este flujo pasa, el candidato cumple los 30 criterios de aceptación del
+# documento funcional y la revisión de seguridad.
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Migraciones · API · suite completa
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mip_dev
+          TZ: America/Lima
+        ports: ["5436:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mip_dev"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6383:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+
+    env:
+      PGPASSWORD: postgres
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5436/mip_dev
+      REDIS_URL: redis://localhost:6383
+      API_BASE_URL: http://localhost:3200/api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Cliente de PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Dependencias
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+
+      - name: Migraciones
+        run: bash db/scripts/apply-migrations.sh
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5436
+
+      # Correrlas dos veces es la prueba de idempotencia: el README promete que
+      # el script se puede repetir sin errores y sin duplicar una fila.
+      - name: Migraciones · idempotencia
+        run: bash db/scripts/apply-migrations.sh
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5436
+
+      - name: Tipos y estilo del backend
+        run: |
+          npx --prefix backend tsc --noEmit -p backend/tsconfig.json
+          npm run --prefix backend lint -- --max-warnings=0
+
+      # El intérprete de cotizaciones en PDF es lógica pura: se prueba aquí,
+      # contra documentos generados al vuelo, sin necesidad de base ni API.
+      - name: Pruebas unitarias del backend
+        run: npm run --prefix backend test
+
+      - name: Compilar
+        run: |
+          npm run --prefix backend build
+          npm run --prefix frontend build
+
+      # MinIO no puede declararse como `service` porque la imagen necesita
+      # argumentos (`server /data`) y GitHub no permite pasarlos ahí. Va como
+      # paso: sin almacén no hay adjuntos, y los adjuntos son parte del producto.
+      - name: Almacén de objetos
+        run: |
+          docker run -d --name minio -p 9110:9000 \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio:latest server /data
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:9110/minio/health/live && break
+            sleep 2
+          done
+          curl -sf http://localhost:9110/minio/health/live || { echo "MinIO no levantó"; exit 1; }
+
+      - name: Arrancar la API
+        run: |
+          cp backend/.env.example backend/.env
+          npm run --prefix backend start:prod &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3200/api/health && break
+            sleep 2
+          done
+          curl -sf http://localhost:3200/api/health || { echo "la API no levantó"; exit 1; }
+
+      - name: Flujos funcionales
+        run: node scripts/pruebas-flujos.mjs
+
+      - name: Criterios de aceptación del documento (QA-01..QA-30)
+        run: node scripts/pruebas-qa.mjs
+        env:
+          # En CI no hay contenedor: el psql local llega directo a la base.
+          MIP_SQL_DIRECTO: "1"
+
+      - name: Revisión de seguridad
+        run: node scripts/pruebas-seguridad.mjs
+
+      - name: Importación de cotización desde PDF
+        run: node scripts/pruebas-cotizacion-pdf.mjs
+
+      - name: Bloqueo de credenciales
+        run: psql -h localhost -p 5436 -U postgres -d mip_dev -f db/scripts/smoke-bloqueo-credenciales.sql
+
+      - name: Invariantes de la base
+        run: psql -h localhost -p 5436 -U postgres -d mip_dev -v ON_ERROR_STOP=1 -f db/scripts/smoke-invariantes.sql
