@@ -23,24 +23,31 @@ body.swal2-toast-shown .swal2-container {
 }
 body.swal2-toast-shown .swal2-container .swal2-toast { pointer-events: auto; }
 
+/* El diálogo sigue la misma composición que Modal.vue: todo alineado a la
+   izquierda, campos a lo ancho del contenido y botones a la derecha. Mezclar
+   texto centrado con botones a la derecha es lo que lo hacía verse torcido. */
 .swal-mip {
+  --swal2-width: 440px;
   background: var(--bg-elev) !important;
   color: var(--ink) !important;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-pop) !important;
   font-family: var(--font) !important;
-  padding: 26px 28px 22px !important;
-  min-width: 380px;
+  padding: 24px 24px 20px !important;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
 }
 
 .swal-mip .swal2-title {
   font-family: var(--font) !important;
-  font-size: 17px !important;
+  font-size: 16px !important;
   font-weight: 600 !important;
   letter-spacing: -0.02em;
+  line-height: 1.35;
   color: var(--ink) !important;
-  padding: 0 0 6px !important;
+  text-align: left !important;
+  padding: 0 !important;
   margin: 0 !important;
 }
 
@@ -48,27 +55,53 @@ body.swal2-toast-shown .swal2-container .swal2-toast { pointer-events: auto; }
   color: var(--ink-3) !important;
   font-size: 13px !important;
   line-height: 1.55 !important;
-  margin: 4px 0 6px !important;
+  text-align: left !important;
+  padding: 0 !important;
+  margin: 6px 0 0 !important;
 }
 
-.swal-mip .swal2-icon { margin: 6px auto 14px !important; border-color: var(--line) !important; }
-/* Sólo se tiñe el anillo del success: el resto respeta el render nativo. */
+/* Icono: un distintivo pequeño sobre el título, no un sello de 80 px. Se
+   escala con la variable propia de SweetAlert para no romper su geometría. */
+.swal-mip .swal2-icon {
+  --swal2-icon-zoom: 0.5;
+  justify-self: start;
+  margin: 0 0 14px !important;
+  border-width: 0.3em !important;
+}
+.swal-mip .swal2-icon.swal2-success { border-color: var(--emerald-line) !important; color: var(--emerald) !important; }
 .swal-mip .swal2-icon.swal2-success .swal2-success-ring { border-color: var(--emerald-line) !important; }
 .swal-mip .swal2-icon.swal2-success [class^="swal2-success-line"] { background-color: var(--emerald) !important; }
 .swal-mip .swal2-icon.swal2-success [class^="swal2-success-circular-line"],
 .swal-mip .swal2-icon.swal2-success .swal2-success-fix { background-color: var(--bg-elev) !important; }
+.swal-mip .swal2-icon.swal2-error { border-color: var(--red-line) !important; }
+.swal-mip .swal2-icon.swal2-error [class^="swal2-x-mark-line"] { background-color: var(--red) !important; }
+.swal-mip .swal2-icon.swal2-warning { border-color: var(--amber-line) !important; color: var(--amber) !important; }
+.swal-mip .swal2-icon.swal2-info { border-color: var(--blue-line) !important; color: var(--blue) !important; }
+.swal-mip .swal2-icon.swal2-question { border-color: var(--line-strong) !important; color: var(--ink-3) !important; }
 
+/* Sin !important en display: SweetAlert oculta con display:none en línea y
+   hay que dejarle ganar, o el contenedor vacío sigue ocupando espacio. */
 .swal-mip .swal2-actions {
-  display: flex !important;
   gap: 8px !important;
-  margin-top: 18px !important;
+  width: 100% !important;
+  margin: 20px 0 0 !important;
+  padding: 0 !important;
   justify-content: flex-end !important;
-  width: 100%;
 }
+.swal-mip .swal2-actions .btn { margin: 0 !important; }
+.swal-mip .swal2-loader { display: none !important; }
 
+/* SweetAlert da a sus campos un margen lateral de 2em; sumado al width:100%
+   de .input el campo se salía por la derecha. */
 .swal-mip .swal2-input,
 .swal-mip .swal2-textarea,
 .swal-mip .swal2-select {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 16px 0 0 !important;
   background: var(--bg-elev) !important;
   color: var(--ink) !important;
   border: 1px solid var(--line) !important;
@@ -79,6 +112,9 @@ body.swal2-toast-shown .swal2-container .swal2-toast { pointer-events: auto; }
   box-shadow: none !important;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
+.swal-mip .swal2-input:hover,
+.swal-mip .swal2-textarea:hover,
+.swal-mip .swal2-select:hover { border-color: var(--line-strong) !important; }
 .swal-mip .swal2-input:focus,
 .swal-mip .swal2-textarea:focus,
 .swal-mip .swal2-select:focus {
@@ -86,10 +122,21 @@ body.swal2-toast-shown .swal2-container .swal2-toast { pointer-events: auto; }
   box-shadow: 0 0 0 3px var(--emerald-soft) !important;
   outline: none !important;
 }
-.swal-mip .swal2-textarea { min-height: 96px; line-height: 1.55; }
+.swal-mip .swal2-input::placeholder,
+.swal-mip .swal2-textarea::placeholder { color: var(--ink-4) !important; }
+.swal-mip .swal2-textarea { min-height: 96px; line-height: 1.55; resize: vertical; }
+.swal-mip .swal2-select { cursor: pointer; }
+.swal-mip .swal2-input.swal2-inputerror,
+.swal-mip .swal2-textarea.swal2-inputerror {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px var(--red-soft) !important;
+}
 
 .swal-mip-error,
 .swal-mip .swal2-validation-message {
+  justify-content: flex-start !important;
+  margin: 10px 0 0 !important;
+  padding: 8px 11px !important;
   background: var(--red-soft) !important;
   color: var(--red-ink) !important;
   border-radius: 8px;
@@ -99,24 +146,37 @@ body.swal2-toast-shown .swal2-container .swal2-toast { pointer-events: auto; }
 .swal-mip .swal2-validation-message::before { display: none; }
 
 .swal-mip .swal2-radio {
-  background: transparent !important;
   flex-direction: column !important;
-  gap: 5px !important;
   align-items: stretch !important;
+  gap: 6px !important;
+  margin: 16px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
 }
 .swal-mip .swal2-radio label {
-  background: var(--bg-soft) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px;
+  margin: 0 !important;
+  padding: 10px 12px !important;
+  background: var(--bg-elev) !important;
   border: 1px solid var(--line) !important;
   border-radius: 8px !important;
-  padding: 10px 12px !important;
   font-size: 13px !important;
   color: var(--ink-2) !important;
   text-align: left !important;
   cursor: pointer !important;
-  margin: 0 !important;
+  transition: border-color 0.12s, background 0.12s;
 }
-.swal-mip .swal2-radio label:hover { border-color: var(--emerald-line) !important; background: var(--emerald-soft) !important; }
-.swal-mip .swal2-radio input[type="radio"] { accent-color: var(--emerald); }
+.swal-mip .swal2-radio label:hover { border-color: var(--line-strong) !important; background: var(--bg-soft) !important; }
+.swal-mip .swal2-radio label:has(input:checked) {
+  border-color: var(--emerald-line) !important;
+  background: var(--emerald-soft) !important;
+  color: var(--ink) !important;
+}
+.swal-mip .swal2-radio input[type="radio"] { margin: 0 !important; accent-color: var(--emerald); }
+.swal-mip .swal2-radio .swal2-label { margin: 0 !important; font-size: inherit !important; }
 
 /* Toast: sin sombra, sólo el borde fino lo delimita. */
 .swal-mip--toast {

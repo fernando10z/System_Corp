@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="abierto" class="modal-back" @mousedown.self="cerrar">
+      <div v-if="abierto" class="modal-back" @mousedown.self="alPulsarFondo">
         <div
           :class="['modal', ancho]"
           role="dialog"
@@ -16,7 +16,7 @@
                 <p v-if="subtitulo" class="m-sub">{{ subtitulo }}</p>
               </div>
             </slot>
-            <button class="row-action" aria-label="Cerrar" @click="cerrar"><X :size="16" /></button>
+            <button class="row-action" aria-label="Cerrar" @click="emit('cerrar')"><X :size="16" /></button>
           </header>
 
           <div class="m-body"><slot /></div>
@@ -43,7 +43,9 @@ const props = defineProps({
 });
 const emit = defineEmits(["cerrar"]);
 
-function cerrar() {
+// `persistente` sólo protege del clic accidental fuera del modal; la X y Escape
+// son gestos explícitos y siempre cierran.
+function alPulsarFondo() {
   if (!props.persistente) emit("cerrar");
 }
 
