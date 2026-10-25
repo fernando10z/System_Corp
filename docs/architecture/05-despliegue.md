@@ -40,3 +40,21 @@ mientras dura el despliegue.
   al superusuario se salta el modelo de seguridad completo del proyecto.
 - `LOG_PRETTY=false` — en producción el JSON crudo es lo que consumen los
   agregadores.
+
+## Adjuntos sin MinIO (`STORAGE_DRIVER=fs`)
+
+El almacén es un puerto (`AlmacenArchivos`) con dos adaptadores. Por defecto es
+`minio` (cualquier S3). En un servidor de un solo nodo se puede usar `fs`:
+
+```bash
+STORAGE_DRIVER=fs
+STORAGE_FS_ROOT=/ruta/absoluta/adjuntos       # entra en el backup de esa carpeta
+STORAGE_URL_SECRET=$(openssl rand -base64 48)  # firma HMAC de los enlaces
+STORAGE_FS_URL_BASE=https://<dominio>/api      # cómo llega el navegador a la API
+```
+
+La descarga sigue el mismo contrato que con S3: `GET /adjuntos/:id/descarga`
+comprueba tenant y alcance en la base y devuelve un enlace temporal
+(`STORAGE_URL_TTL_MIN`) a `GET /archivos?t=…`, que verifica la firma antes de
+leer el disco. Sólo PDF, imágenes, video y texto plano se muestran en línea; el
+resto se fuerza a descarga.
