@@ -81,10 +81,13 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = Number(config.get("PORT") ?? 3100);
-  await app.listen(port, "0.0.0.0");
+  // HOST=127.0.0.1 cuando hay un proxy o túnel delante en la misma máquina: así
+  // la API no queda escuchando hacia afuera aunque el firewall falle.
+  const host = config.get<string>("HOST") ?? "0.0.0.0";
+  await app.listen(port, host);
 
   const log = app.get(PinoLogger);
-  log.log(`MIP API escuchando en http://0.0.0.0:${port}/${config.get("API_PREFIX") ?? "api"}`);
+  log.log(`MIP API escuchando en http://${host}:${port}/${config.get("API_PREFIX") ?? "api"}`);
 }
 
 void bootstrap();
