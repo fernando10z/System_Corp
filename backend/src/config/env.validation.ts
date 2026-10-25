@@ -38,6 +38,8 @@ class VariablesEntorno {
 
   @IsOptional() @IsString() REDIS_URL?: string;
   @IsOptional() @IsString() STORAGE_ENDPOINT?: string;
+  // Con `fs`, STORAGE_FS_ROOT y STORAGE_URL_SECRET los exige DiscoService al arrancar.
+  @IsOptional() @IsIn(["minio", "fs"]) STORAGE_DRIVER?: string;
   @IsOptional() @IsString() CORS_ORIGINS?: string;
   @IsOptional() @IsString() MAIL_HOST?: string;
 }

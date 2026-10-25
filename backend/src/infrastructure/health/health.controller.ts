@@ -3,14 +3,14 @@ import { Pool } from "pg";
 import { Public } from "../../common/decorators/public.decorator";
 import { PG_POOL } from "../database/database.constants";
 import { RedisService } from "../cache/redis.service";
-import { MinioService } from "../storage/minio.service";
+import { AlmacenArchivos } from "../storage/almacen-archivos.port";
 
 @Controller("health")
 export class HealthController {
   constructor(
     @Inject(PG_POOL) private readonly pool: Pool,
     private readonly redis: RedisService,
-    private readonly storage: MinioService,
+    private readonly storage: AlmacenArchivos,
   ) {}
 
   @Public()

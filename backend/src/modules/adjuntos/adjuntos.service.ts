@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import { AdjuntosRepository, type RegistrarAdjuntoArgs } from "./adjuntos.repository";
-import { MinioService } from "../../infrastructure/storage/minio.service";
+import { AlmacenArchivos } from "../../infrastructure/storage/almacen-archivos.port";
 import type { JwtPayload } from "../../common/types/jwt-payload.type";
 import type { SpContext } from "../../common/types/sp-result.type";
 
@@ -24,7 +24,7 @@ const TIPOS: Array<[RegExp, string]> = [
 export class AdjuntosService {
   constructor(
     private readonly repo: AdjuntosRepository,
-    private readonly storage: MinioService,
+    private readonly storage: AlmacenArchivos,
   ) {}
 
   private ctx(u: JwtPayload): SpContext {
@@ -96,7 +96,10 @@ export class AdjuntosService {
     return {
       nombre: a.nombre,
       mime: a.mime,
-      url: await this.storage.urlDescarga(String(a.storage_key)),
+      url: await this.storage.urlDescarga(String(a.storage_key), {
+        nombre: a.nombre,
+        mime: a.mime,
+      }),
     };
   }
 

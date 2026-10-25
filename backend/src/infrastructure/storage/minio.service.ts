@@ -1,23 +1,21 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Client } from "minio";
-import { randomUUID } from "node:crypto";
+import { AlmacenArchivos } from "./almacen-archivos.port";
 
 /**
- * Almacén de adjuntos. La base guarda la `storage_key`; los bytes viven aquí.
- *
- * Los LÍMITES de tamaño no se comprueban en este servicio: los valida el SP
- * app.sp_adjunto_registrar leyendo la configuración del tenant, porque el
- * cap. 28.3 exige que sean configurables sin tocar la lógica de OT.
+ * Adaptador MinIO / S3 del almacén de adjuntos (STORAGE_DRIVER=minio, el valor
+ * por defecto). El contrato y las reglas comunes están en AlmacenArchivos.
  */
 @Injectable()
-export class MinioService implements OnModuleInit {
+export class MinioService extends AlmacenArchivos implements OnModuleInit {
   private readonly logger = new Logger(MinioService.name);
   private readonly client: Client;
   private readonly bucket: string;
   private readonly urlTtl: number;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(config: ConfigService) {
+    super();
     this.bucket = config.get<string>("STORAGE_BUCKET") ?? "mip-adjuntos";
     this.urlTtl = Number(config.get("STORAGE_URL_TTL_MIN") ?? 15) * 60;
     this.client = new Client({
@@ -41,15 +39,6 @@ export class MinioService implements OnModuleInit {
         `No se pudo verificar el bucket ${this.bucket}: ${(e as Error).message}. La carga de adjuntos fallará hasta que el almacén esté disponible.`,
       );
     }
-  }
-
-  /**
-   * La clave se construye por tenant y OT para que el almacén sea navegable y
-   * para poder aplicar políticas de retención por cliente sin buscar en la base.
-   */
-  construirClave(tenantId: string, otId: string | null, nombre: string): string {
-    const limpio = nombre.replace(/[^\w.\-]+/g, "_").slice(-120);
-    return `${tenantId}/${otId ?? "sin-ot"}/${randomUUID()}-${limpio}`;
   }
 
   async subir(clave: string, buffer: Buffer, mimeType?: string): Promise<void> {
